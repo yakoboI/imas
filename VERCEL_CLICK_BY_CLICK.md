@@ -64,6 +64,8 @@ Follow these exact steps. Every click is explained.
 10. **Type:** `npm install`
 11. **Press Tab**
 
+**⚠️ IMPORTANT:** Vercel will automatically run `npm install` before building, so you don't need to worry about dependencies. The Root Directory setting tells Vercel where to find the `package.json` file.
+
 ### STEP 8: Add Environment Variable
 1. Scroll down to find **"Environment Variables"** section
 2. **Click** the **"Add"** button or **"Add Environment Variable"** link
@@ -232,12 +234,15 @@ After deployment, you should have:
 2. Go to Vercel Settings → GitHub
 3. Make sure `yakoboI/imas` repo is authorized
 
-### Problem: Build fails on Vercel
+### Problem: Build fails on Vercel - "vite: command not found"
 **Solution:**
-1. Check Root Directory is exactly: `frontend/web-app` or `frontend/superadmin-portal`
+1. **Most Common:** Check Root Directory is exactly: `frontend/web-app` or `frontend/superadmin-portal`
+   - If Root Directory is wrong, Vercel won't find the `package.json` and won't install dependencies
 2. Check Build Command is exactly: `npm run build`
 3. Check Output Directory is exactly: `dist`
-4. Look at build logs in Vercel to see the error
+4. Check Install Command is: `npm install` (Vercel should do this automatically)
+5. Look at build logs in Vercel - check if `npm install` ran successfully
+6. If dependencies aren't installing, try setting Install Command explicitly to: `npm install`
 
 ### Problem: Frontend shows blank page
 **Solution:**
@@ -264,4 +269,5 @@ If you're stuck at any step:
 ---
 
 **🎉 You're Done!** Your app should now be live on the internet!
+
 
