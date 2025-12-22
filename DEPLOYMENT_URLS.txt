@@ -1,0 +1,85 @@
+═══════════════════════════════════════════════════════════════
+🚀 IMAS DEPLOYMENT - COPY & PASTE URLS
+═══════════════════════════════════════════════════════════════
+
+📦 GITHUB REPOSITORY:
+https://github.com/yakoboI/imas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌐 VERCEL - WEB APP (Main Frontend)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Vercel Dashboard:
+https://vercel.com/new
+
+Project Settings:
+  • Project Name: imas-web-app
+  • Root Directory: frontend/web-app
+  • Framework: Vite
+  • Build Command: npm run build
+  • Output Directory: dist
+
+Environment Variable:
+  • Name: VITE_API_URL
+  • Value: https://YOUR-BACKEND.up.railway.app/api
+
+After Deployment - Your Web App URL:
+https://imas-web-app.vercel.app
+(Replace with your actual URL after deployment)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔐 VERCEL - SUPERADMIN PORTAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Vercel Dashboard:
+https://vercel.com/new
+
+Project Settings:
+  • Project Name: imas-superadmin
+  • Root Directory: frontend/superadmin-portal
+  • Framework: Vite
+  • Build Command: npm run build
+  • Output Directory: dist
+
+Environment Variable:
+  • Name: VITE_API_URL
+  • Value: https://YOUR-BACKEND.up.railway.app/api
+
+After Deployment - Your SuperAdmin URL:
+https://imas-superadmin.vercel.app
+(Replace with your actual URL after deployment)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️ RAILWAY - BACKEND ENVIRONMENT VARIABLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After deploying both Vercel projects, update Railway backend:
+
+Variable 1:
+  • Name: FRONTEND_URL
+  • Value: https://imas-web-app.vercel.app
+  (Replace with your actual web app URL)
+
+Variable 2:
+  • Name: SUPERADMIN_URL
+  • Value: https://imas-superadmin.vercel.app
+  (Replace with your actual superadmin URL)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ TESTING URLs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Web App:
+https://imas-web-app.vercel.app
+
+SuperAdmin Portal:
+https://imas-superadmin.vercel.app
+
+Backend Health Check:
+https://YOUR-BACKEND.up.railway.app/health
+
+Backend API Base:
+https://YOUR-BACKEND.up.railway.app/api
+
+═══════════════════════════════════════════════════════════════
+
