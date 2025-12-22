@@ -1,0 +1,41 @@
+{
+  "name": "inventory-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Multitenant Inventory System",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "migrate": "node src/database/migrations/run.js",
+    "seed": "node src/database/seeds/run.js",
+    "test": "jest",
+    "install:win": "powershell -Command \"$env:PUPPETEER_SKIP_DOWNLOAD='true'; npm install\"",
+    "kill-port": "powershell -ExecutionPolicy Bypass -File kill-port.ps1"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.8.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "handlebars": "^4.7.8",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.29.4",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.11",
+    "pg": "^8.11.3",
+    "puppeteer": "^24.15.0",
+    "redis": "^4.6.11",
+    "sequelize": "^6.35.0",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "multitenant-inventory-system",
+  "version": "1.0.0",
+  "description": "Multitenant Inventory Management System with SuperAdmin, Audit Trails & Receipt Generation",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend/web-app && npm start",
+    "dev:superadmin": "cd frontend/superadmin-portal && npm start",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend/web-app && npm install && cd ../superadmin-portal && npm install",
+    "build": "cd frontend/web-app && npm run build && cd ../superadmin-portal && npm run build",
+    "test": "cd backend && npm test"
+  },
+  "keywords": [
+    "inventory",
+    "multitenant",
+    "management",
+    "system"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+

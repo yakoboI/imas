@@ -1,0 +1,170 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import {
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Box,
+} from '@mui/material';
+import {
+  Dashboard,
+  Person,
+  Inventory,
+  ShoppingCart,
+  Receipt,
+  Warehouse,
+  People,
+  LocalShipping,
+  Assessment,
+  Settings,
+  History,
+  Category,
+  PointOfSale,
+} from '@mui/icons-material';
+
+// Central definition of what each role can see in the sidebar
+// (backend still enforces data-level permissions)
+const menuItems = [
+  // Everyone gets Dashboard
+  { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
+
+  // Sales-related
+  {
+    text: 'Sales',
+    icon: <PointOfSale />,
+    path: '/sales',
+    roles: ['admin', 'sales_manager', 'sales_staff', 'accountant', 'viewer'],
+  },
+  {
+    text: 'Orders',
+    icon: <ShoppingCart />,
+    path: '/orders',
+    roles: ['admin', 'sales_manager', 'sales_staff', 'accountant'],
+  },
+  {
+    text: 'Receipts',
+    icon: <Receipt />,
+    path: '/receipts',
+    roles: ['admin', 'sales_manager', 'sales_staff', 'accountant'],
+  },
+
+  // Inventory-related
+  {
+    text: 'Products',
+    icon: <Inventory />,
+    path: '/products',
+    roles: ['admin', 'inventory_manager', 'inventory_staff', 'viewer'],
+  },
+  {
+    text: 'Categories',
+    icon: <Category />,
+    path: '/categories',
+    roles: ['admin', 'inventory_manager', 'inventory_staff'],
+  },
+  {
+    text: 'Inventory',
+    icon: <Warehouse />,
+    path: '/inventory',
+    roles: ['admin', 'inventory_manager', 'inventory_staff'],
+  },
+  {
+    text: 'Warehouses',
+    icon: <Warehouse />,
+    path: '/warehouses',
+    roles: ['admin', 'inventory_manager', 'inventory_staff'],
+  },
+  {
+    text: 'Suppliers',
+    icon: <LocalShipping />,
+    path: '/suppliers',
+    roles: ['admin', 'inventory_manager', 'inventory_staff'],
+  },
+
+  // Reporting / audit
+  {
+    text: 'Reports',
+    icon: <Assessment />,
+    path: '/reports',
+    roles: ['admin', 'sales_manager', 'inventory_manager', 'accountant', 'viewer'],
+  },
+  {
+    text: 'Audit Logs',
+    icon: <History />,
+    path: '/audit-logs',
+    roles: ['admin'],
+  },
+
+  // User management (admin only)
+  {
+    text: 'Users',
+    icon: <People />,
+    path: '/users',
+    roles: ['admin'],
+  },
+
+  // Settings (admin + managers)
+  {
+    text: 'Settings',
+    icon: <Settings />,
+    path: '/settings',
+    roles: ['admin', 'sales_manager', 'inventory_manager'],
+  },
+];
+
+function Sidebar({ onItemClick }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useSelector((state) => state.auth);
+
+  const handleItemClick = (path) => {
+    navigate(path);
+    onItemClick();
+  };
+
+  const filteredMenuItems = menuItems.filter((item) => {
+    // Items without a roles array are visible to everyone
+    if (!item.roles || item.roles.length === 0) return true;
+    // Hide if we don't know the user role yet
+    if (!user?.role) return false;
+    // Show only if the user's role is allowed for this item
+    return item.roles.includes(user.role);
+  });
+
+  return (
+    <Box sx={{ pt: 2 }}>
+      <List>
+        {filteredMenuItems.map((item) => (
+          <ListItem key={item.text} disablePadding>
+            <ListItemButton
+              selected={location.pathname === item.path}
+              onClick={() => handleItemClick(item.path)}
+            >
+              <ListItemIcon sx={{ color: location.pathname === item.path ? 'primary.main' : 'inherit' }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+      <Divider sx={{ my: 2 }} />
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleItemClick('/profile')}>
+            <ListItemIcon>
+              <Person />
+            </ListItemIcon>
+            <ListItemText primary="My Profile" />
+          </ListItemButton>
+        </ListItem>
+      </List>
+    </Box>
+  );
+}
+
+export default Sidebar;
+

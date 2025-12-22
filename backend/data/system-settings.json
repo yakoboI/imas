@@ -1,0 +1,9 @@
+{
+  "systemName": "Arusha",
+  "maintenanceMode": false,
+  "allowNewRegistrations": true,
+  "maxTenants": 1000,
+  "sessionTimeout": 3600,
+  "backupFrequency": "daily",
+  "emailNotifications": true
+}
