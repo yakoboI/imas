@@ -33,6 +33,7 @@ router.get('/audit-logs/tenant/:id', SuperAdminController.getTenantAuditLogs);
 router.get('/audit-logs/search', SuperAdminController.searchAuditLogs);
 router.post('/audit-logs/export', SuperAdminController.exportAuditLogs);
 router.get('/system-logs', SuperAdminController.getSystemLogs);
+router.post('/system-logs/archive', SuperAdminController.archiveSystemLogs);
 
 // Analytics
 router.get('/analytics/overview', SuperAdminController.getAnalyticsOverview);

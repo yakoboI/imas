@@ -33,6 +33,24 @@
 - `GET /api/superadmin/audit-logs/search` - Search audit logs
 - `POST /api/superadmin/audit-logs/export` - Export audit logs
 - `GET /api/superadmin/system-logs` - Get system logs
+- `POST /api/superadmin/system-logs/archive` - Archive system logs (moves old logs to archive table)
+
+**Archive System Logs Request Body:**
+```json
+{
+  "beforeDate": "2024-01-01T00:00:00Z"  // OR
+  "daysOld": 90  // Archive logs older than 90 days
+}
+```
+
+**Archive System Logs Response:**
+```json
+{
+  "message": "System logs archived successfully",
+  "archivedCount": 150,
+  "cutoffDate": "2024-01-01T00:00:00.000Z"
+}
+```
 
 ### Analytics (Requires SuperAdmin auth)
 - `GET /api/superadmin/analytics/overview` - Analytics overview

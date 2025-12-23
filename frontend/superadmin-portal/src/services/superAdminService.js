@@ -100,6 +100,11 @@ const superAdminService = {
     return response.data;
   },
 
+  archiveSystemLogs: async (data) => {
+    const response = await api.post('/superadmin/system-logs/archive', data);
+    return response.data;
+  },
+
   // Analytics
   getAnalyticsOverview: async () => {
     const response = await api.get('/superadmin/analytics/overview');

@@ -1,7 +1,8 @@
 const AuthService = require('../services/authService');
 const AuditService = require('../services/auditService');
 const SystemSettingsService = require('../services/systemSettingsService');
-const { Tenant, User, SuperAdmin, SystemLog, AuditLog } = require('../models/index');
+const { Tenant, User, SuperAdmin, SystemLog, SystemLogArchive, AuditLog } = require('../models/index');
+const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
 
 class SuperAdminController {
@@ -170,29 +171,63 @@ class SuperAdminController {
 
   // Delete tenant
   static async deleteTenant(req, res, next) {
+    const transaction = await sequelize.transaction();
+    
     try {
       const { id } = req.params;
 
-      const tenant = await Tenant.findByPk(id);
+      const tenant = await Tenant.findByPk(id, { transaction });
       if (!tenant) {
+        await transaction.rollback();
         return res.status(404).json({ error: 'Tenant not found' });
       }
 
-      await tenant.destroy();
+      const tenantName = tenant.name;
+      const tenantId = tenant.id;
 
-      // Log system action
-      await SystemLog.create({
-        superadmin_id: req.user.id,
-        action: 'DELETE_TENANT',
-        target_tenant_id: id,
-        description: `Tenant ${id} deleted`,
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent']
+      // Delete all system_logs that reference this tenant first (they don't have CASCADE DELETE)
+      await SystemLog.destroy({
+        where: { target_tenant_id: tenantId },
+        transaction
       });
+
+      // Delete tenant (cascade will handle all other related records)
+      await tenant.destroy({ transaction });
+
+      // Log system action AFTER successful deletion (set target_tenant_id to null)
+      try {
+        await SystemLog.create({
+          superadmin_id: req.user.id,
+          action: 'DELETE_TENANT',
+          target_tenant_id: null, // Set to null since tenant is already deleted
+          description: `Tenant ${tenantName} (${tenantId}) deleted`,
+          ip_address: req.ip,
+          user_agent: req.headers['user-agent']
+        });
+      } catch (logError) {
+        console.error('Failed to log tenant deletion (non-critical):', logError);
+        // Don't fail the request if logging fails
+      }
+
+      await transaction.commit();
 
       res.json({ message: 'Tenant deleted successfully' });
     } catch (error) {
-      next(error);
+      await transaction.rollback();
+      
+      // Provide more detailed error messages
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(409).json({ 
+          error: 'Cannot delete tenant. There are still related records that need to be removed first.',
+          details: error.message 
+        });
+      }
+      
+      console.error('Error deleting tenant:', error);
+      res.status(500).json({ 
+        error: 'Failed to delete tenant',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   }
 
@@ -524,6 +559,113 @@ class SuperAdminController {
         }
       });
     } catch (error) {
+      next(error);
+    }
+  }
+
+  // Archive system logs
+  static async archiveSystemLogs(req, res, next) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      const { beforeDate, daysOld } = req.body;
+
+      // Determine the cutoff date
+      let cutoffDate;
+      if (beforeDate) {
+        cutoffDate = new Date(beforeDate);
+      } else if (daysOld) {
+        const days = parseInt(daysOld);
+        if (isNaN(days) || days < 1) {
+          await transaction.rollback();
+          return res.status(400).json({ error: 'daysOld must be a positive number' });
+        }
+        cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+      } else {
+        await transaction.rollback();
+        return res.status(400).json({ 
+          error: 'Either beforeDate or daysOld is required',
+          example: {
+            beforeDate: '2024-01-01T00:00:00Z',
+            daysOld: 90
+          }
+        });
+      }
+
+      // Validate date
+      if (isNaN(cutoffDate.getTime())) {
+        await transaction.rollback();
+        return res.status(400).json({ error: 'Invalid date format' });
+      }
+
+      // Find logs to archive (older than cutoff date)
+      const logsToArchive = await SystemLog.findAll({
+        where: {
+          timestamp: {
+            [Op.lt]: cutoffDate
+          }
+        },
+        transaction
+      });
+
+      if (logsToArchive.length === 0) {
+        await transaction.rollback();
+        return res.json({
+          message: 'No logs found to archive',
+          archivedCount: 0,
+          cutoffDate: cutoffDate.toISOString()
+        });
+      }
+
+      // Copy logs to archive table
+      const archiveData = logsToArchive.map(log => ({
+        id: log.id,
+        superadmin_id: log.superadmin_id,
+        action: log.action,
+        target_tenant_id: log.target_tenant_id,
+        description: log.description,
+        ip_address: log.ip_address,
+        user_agent: log.user_agent,
+        timestamp: log.timestamp,
+        archived_at: new Date()
+      }));
+
+      await SystemLogArchive.bulkCreate(archiveData, { transaction });
+
+      // Delete archived logs from main table
+      const deletedCount = await SystemLog.destroy({
+        where: {
+          id: {
+            [Op.in]: logsToArchive.map(log => log.id)
+          }
+        },
+        transaction
+      });
+
+      await transaction.commit();
+
+      // Log the archive action
+      try {
+        await SystemLog.create({
+          superadmin_id: req.user.id,
+          action: 'ARCHIVE_SYSTEM_LOGS',
+          description: `Archived ${deletedCount} system logs older than ${cutoffDate.toISOString()}`,
+          ip_address: req.ip,
+          user_agent: req.headers['user-agent']
+        });
+      } catch (logError) {
+        console.error('Failed to log archive action (non-critical):', logError);
+      }
+
+      res.json({
+        message: 'System logs archived successfully',
+        archivedCount: deletedCount,
+        cutoffDate: cutoffDate.toISOString()
+      });
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error archiving system logs:', error);
       next(error);
     }
   }

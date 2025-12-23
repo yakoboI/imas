@@ -15,6 +15,7 @@ const StockMovement = require('./StockMovement');
 const Subscription = require('./Subscription');
 const AuditLog = require('./AuditLog');
 const SystemLog = require('./SystemLog');
+const SystemLogArchive = require('./SystemLogArchive');
 
 // Define Relationships
 
@@ -110,8 +111,13 @@ AuditLog.belongsTo(SuperAdmin, { foreignKey: 'superadmin_id', as: 'superadmin' }
 SystemLog.belongsTo(SuperAdmin, { foreignKey: 'superadmin_id', as: 'superadmin' });
 SystemLog.belongsTo(Tenant, { foreignKey: 'target_tenant_id', as: 'targetTenant' });
 
+// SystemLogArchive relationships
+SystemLogArchive.belongsTo(SuperAdmin, { foreignKey: 'superadmin_id', as: 'superadmin' });
+SystemLogArchive.belongsTo(Tenant, { foreignKey: 'target_tenant_id', as: 'targetTenant' });
+
 // SuperAdmin relationships
 SuperAdmin.hasMany(SystemLog, { foreignKey: 'superadmin_id', as: 'systemLogs' });
+SuperAdmin.hasMany(SystemLogArchive, { foreignKey: 'superadmin_id', as: 'archivedSystemLogs' });
 SuperAdmin.hasMany(AuditLog, { foreignKey: 'superadmin_id', as: 'auditLogs' });
 
 module.exports = {
@@ -131,6 +137,7 @@ module.exports = {
   StockMovement,
   Subscription,
   AuditLog,
-  SystemLog
+  SystemLog,
+  SystemLogArchive
 };
 
