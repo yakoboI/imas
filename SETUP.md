@@ -45,7 +45,7 @@ Edit `.env` file with your configuration:
 
 ```env
 # Database
-DB_HOST=localhost
+=localhost
 DB_PORT=5432
 DB_NAME=inventory_system
 DB_USER=postgres

@@ -178,13 +178,28 @@ cd backend
 npm test
 ```
 
+## 📚 Documentation
+
+- **[SETUP.md](SETUP.md)** - Detailed setup instructions
+- **[QUICK_START_WINDOWS.md](QUICK_START_WINDOWS.md)** - Quick start guide for Windows
+- **[WINDOWS_SETUP.md](WINDOWS_SETUP.md)** - Complete Windows setup guide
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
+- **[VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)** - Vercel deployment instructions
+- **[FEATURES.md](FEATURES.md)** - Comprehensive features documentation
+- **[SECURITY.md](SECURITY.md)** - Security best practices
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture
+- **[backend/API_ENDPOINTS.md](backend/API_ENDPOINTS.md)** - API endpoints reference
+- **[deployment/scripts/README.md](deployment/scripts/README.md)** - Backup & restore scripts
+
 ## 📝 License
 
 MIT
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📧 Support
 

@@ -1,5 +1,7 @@
 # 🚀 Vercel Deployment Guide - Copy & Paste Ready
 
+> **Note:** If you encounter issues with the Root Directory dropdown not showing `frontend`, see `VERCEL_ROOT_DIRECTORY_FIX.md` for the solution.
+
 ## 📋 Prerequisites
 - ✅ GitHub repo: `https://github.com/yakoboI/imas`
 - ✅ Railway backend URL: `https://YOUR-BACKEND.up.railway.app` (replace with your actual URL)
@@ -269,4 +271,5 @@ No manual steps needed! 🎉
 1. Check Railway service is running (not paused)
 2. Check environment variables are set correctly
 3. Check database connection in Railway logs
+
 
