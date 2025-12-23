@@ -58,7 +58,7 @@ PGUSER=${{POSTGRES_USER}}
 PGPASSWORD=${{POSTGRES_PASSWORD}}
 POSTGRES_DB=railway
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=dstsWeaAwnAayKOLodUCoqRbatzGfAkR
+POSTGRES_PASSWORD=your-railway-postgres-password-here
 ```
 
 **Note:** The `${{...}}` syntax means Railway will resolve these to actual values. When you view the Variables tab, you'll see the resolved values.
@@ -208,7 +208,7 @@ PGUSER=${{POSTGRES_USER}}
 PGPASSWORD=${{POSTGRES_PASSWORD}}
 POSTGRES_DB=railway
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=dstsWeaAwnAayKOLodUCoqRbatzGfAkR
+POSTGRES_PASSWORD=your-railway-postgres-password-here
 ```
 
 ### Backend Service Variables (What You Need to Add)
@@ -220,7 +220,7 @@ DB_HOST=postgres.railway.internal
 DB_PORT=5432
 DB_NAME=railway
 DB_USER=postgres
-DB_PASSWORD=dstsWeaAwnAayKOLodUCoqRbatzGfAkR
+DB_PASSWORD=your-railway-postgres-password-here
 DB_SSL=true
 ```
 
