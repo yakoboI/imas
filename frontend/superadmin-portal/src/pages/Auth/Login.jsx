@@ -16,6 +16,8 @@ import {
   CircularProgress,
   Fade,
   Zoom,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Email as EmailIcon,
@@ -30,6 +32,8 @@ import { login, clearError } from '../../store/slices/authSlice';
 function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
@@ -146,11 +150,14 @@ function Login() {
       sx={{
         minHeight: '100vh',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: { xs: 'flex-start', sm: 'center' },
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 50%, #6a1b9a 100%)',
         position: 'relative',
         overflow: 'hidden',
+        px: { xs: 0, sm: 2 },
+        py: { xs: 0, sm: 4 },
+        pt: { xs: 2, sm: 4 },
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -173,28 +180,39 @@ function Login() {
         },
       }}
     >
-      <Container component="main" maxWidth="xs" sx={{ position: 'relative', zIndex: 1 }}>
+      <Container 
+        component="main" 
+        maxWidth="xs" 
+        sx={{ 
+          position: 'relative', 
+          zIndex: 1,
+          px: { xs: 1, sm: 3 },
+          py: { xs: 0, sm: 4 },
+          width: '100%',
+          maxWidth: { xs: '100%', sm: '444px' }
+        }}
+      >
         <Fade in timeout={800}>
           <Box>
             <Zoom in timeout={600}>
               <Paper
                 elevation={24}
                 sx={{
-                  p: { xs: 3, sm: 4 },
+                  p: { xs: 2, sm: 4 },
                   width: '100%',
-                  borderRadius: 4,
+                  borderRadius: { xs: 0, sm: 4 },
                   background: 'rgba(255, 255, 255, 0.95)',
                   backdropFilter: 'blur(10px)',
-                  boxShadow: '0 8px 32px 0 rgba(156, 39, 176, 0.37)',
+                  boxShadow: { xs: 'none', sm: '0 8px 32px 0 rgba(156, 39, 176, 0.37)' },
                 }}
               >
                 {/* Header Section */}
                 <Box
                   sx={{
                     textAlign: 'center',
-                    mb: 3,
-                    p: 2,
-                    borderRadius: 3,
+                    mb: { xs: 1.5, sm: 2 },
+                    p: { xs: 1, sm: 1.25 },
+                    borderRadius: { xs: 2, sm: 3 },
                     background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
                     color: 'white',
                     position: 'relative',
@@ -213,9 +231,10 @@ function Login() {
                 >
                   <Box
                     sx={{
-                      width: 80,
-                      height: 80,
-                      margin: '0 auto 16px',
+                      width: { xs: 45, sm: 60 },
+                      height: { xs: 45, sm: 60 },
+                      margin: '0 auto',
+                      mb: { xs: 0.5, sm: 1 },
                       borderRadius: '50%',
                       background: 'rgba(255, 255, 255, 0.2)',
                       display: 'flex',
@@ -226,15 +245,15 @@ function Login() {
                       zIndex: 1,
                     }}
                   >
-                    <AdminIcon sx={{ fontSize: 40, color: 'white' }} />
+                    <AdminIcon sx={{ fontSize: { xs: 24, sm: 32 }, color: 'white' }} />
                   </Box>
                   <Typography
                     component="h1"
                     variant="h4"
                     sx={{
-                      fontSize: { xs: '1.75rem', sm: '2.125rem' },
+                      fontSize: { xs: '1.5rem', sm: '1.875rem' },
                       fontWeight: 700,
-                      mb: 0.5,
+                      mb: 0.25,
                       position: 'relative',
                       zIndex: 1,
                     }}
@@ -244,7 +263,7 @@ function Login() {
                   <Typography
                     variant="body2"
                     sx={{
-                      fontSize: { xs: '0.875rem', sm: '1rem' },
+                      fontSize: { xs: '0.8rem', sm: '0.9rem' },
                       opacity: 0.9,
                       position: 'relative',
                       zIndex: 1,
@@ -260,10 +279,10 @@ function Login() {
                   align="center"
                   gutterBottom
                   sx={{
-                    fontSize: { xs: '1.5rem', sm: '1.75rem' },
+                    fontSize: { xs: '1.25rem', sm: '1.75rem' },
                     fontWeight: 600,
                     color: 'text.primary',
-                    mb: 3,
+                    mb: { xs: 2, sm: 3 },
                   }}
                 >
                   Sign In
@@ -284,7 +303,7 @@ function Login() {
                   </Alert>
                 )}
 
-                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+                <Box component="form" onSubmit={handleSubmit} sx={{ mt: { xs: 0.5, sm: 1 } }}>
                   <TextField
                     margin="normal"
                     required
@@ -299,14 +318,19 @@ function Login() {
                     onBlur={handleBlur}
                     error={touched.email && !!validationErrors.email}
                     helperText={touched.email && validationErrors.email}
+                    size={isMobile ? 'small' : 'medium'}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <EmailIcon color={touched.email && validationErrors.email ? 'error' : 'action'} />
+                          <EmailIcon 
+                            sx={{ fontSize: { xs: 20, sm: 24 } }}
+                            color={touched.email && validationErrors.email ? 'error' : 'action'} 
+                          />
                         </InputAdornment>
                       ),
                     }}
                     sx={{
+                      mt: { xs: 1.5, sm: 2 },
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
                         transition: 'all 0.3s ease',
@@ -334,10 +358,14 @@ function Login() {
                     onBlur={handleBlur}
                     error={touched.password && !!validationErrors.password}
                     helperText={touched.password && validationErrors.password}
+                    size={isMobile ? 'small' : 'medium'}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <LockIcon color={touched.password && validationErrors.password ? 'error' : 'action'} />
+                          <LockIcon 
+                            sx={{ fontSize: { xs: 20, sm: 24 } }}
+                            color={touched.password && validationErrors.password ? 'error' : 'action'} 
+                          />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -346,6 +374,7 @@ function Login() {
                             aria-label="toggle password visibility"
                             onClick={handleTogglePasswordVisibility}
                             edge="end"
+                            size="small"
                             sx={{ color: 'text.secondary' }}
                           >
                             {showPassword ? <VisibilityOff /> : <Visibility />}
@@ -354,6 +383,7 @@ function Login() {
                       ),
                     }}
                     sx={{
+                      mt: { xs: 1.5, sm: 2 },
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
                         transition: 'all 0.3s ease',
@@ -367,13 +397,14 @@ function Login() {
                       },
                     }}
                   />
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mt: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', mt: { xs: 1.5, sm: 2 } }}>
                     <FormControlLabel
                       control={
                         <Checkbox
                           name="rememberMe"
                           checked={formData.rememberMe}
                           onChange={handleChange}
+                          size="small"
                           sx={{
                             color: 'primary.main',
                             '&.Mui-checked': {
@@ -382,7 +413,7 @@ function Login() {
                           }}
                         />
                       }
-                      label="Remember me"
+                      label={<Typography variant="body2">Remember me</Typography>}
                     />
                   </Box>
                   <Button
@@ -392,12 +423,12 @@ function Login() {
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LoginIcon />}
                     disabled={loading || !isFormValid}
                     sx={{
-                      mt: 3,
-                      mb: 2,
-                      py: 1.5,
+                      mt: { xs: 2, sm: 3 },
+                      mb: { xs: 1.5, sm: 2 },
+                      py: { xs: 1.25, sm: 1.5 },
                       borderRadius: 2,
                       background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
-                      fontSize: '1rem',
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
                       fontWeight: 600,
                       textTransform: 'none',
                       boxShadow: '0 4px 15px rgba(156, 39, 176, 0.4)',
