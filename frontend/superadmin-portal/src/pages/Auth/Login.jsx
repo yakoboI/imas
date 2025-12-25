@@ -135,7 +135,13 @@ function Login() {
 
     // Check if form is valid
     if (!errors.email && !errors.password) {
-      dispatch(login(formData));
+      try {
+        await dispatch(login(formData)).unwrap();
+      } catch (error) {
+        // Error is already handled by Redux state, but we catch it here
+        // to prevent unhandled promise rejection warnings
+        // The error will be displayed via the error state from Redux
+      }
     }
   };
 
