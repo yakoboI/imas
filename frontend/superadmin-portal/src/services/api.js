@@ -34,8 +34,20 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Log error details for debugging (only in development)
-    if (import.meta.env.DEV) {
+    // Handle 401 Unauthorized - redirect to login (silently)
+    if (error.response?.status === 401) {
+      localStorage.removeItem('superadmin_token');
+      localStorage.removeItem('superadmin');
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      // Return a rejected promise but don't log 401 errors
+      return Promise.reject(error);
+    }
+
+    // Log error details for debugging (only in development, and not for 401s)
+    if (import.meta.env.DEV && error.response?.status !== 401) {
       console.error('API Error:', {
         url: error.config?.url,
         method: error.config?.method,
@@ -44,16 +56,6 @@ api.interceptors.response.use(
         message: error.message,
         data: error.response?.data,
       });
-    }
-
-    // Handle 401 Unauthorized - redirect to login
-    if (error.response?.status === 401) {
-      localStorage.removeItem('superadmin_token');
-      localStorage.removeItem('superadmin');
-      // Only redirect if not already on login page
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
     }
 
     // Handle 503 Service Unavailable - Maintenance mode

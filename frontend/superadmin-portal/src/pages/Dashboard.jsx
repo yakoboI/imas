@@ -24,19 +24,43 @@ function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      const [overview, health] = await Promise.all([
+      const [overview, health] = await Promise.allSettled([
         superAdminService.getAnalyticsOverview(),
         superAdminService.getSystemHealth(),
       ]);
 
-      setStats({
-        totalTenants: overview.totalTenants || 0,
-        activeTenants: overview.activeTenants || 0,
-        totalUsers: overview.totalUsers || 0,
-        systemHealth: health.status === 'ok' ? 'healthy' : 'unhealthy',
-      });
+      // Handle overview result
+      if (overview.status === 'fulfilled') {
+        setStats(prev => ({
+          ...prev,
+          totalTenants: overview.value.totalTenants || 0,
+          activeTenants: overview.value.activeTenants || 0,
+          totalUsers: overview.value.totalUsers || 0,
+        }));
+      } else if (overview.reason?.response?.status !== 401) {
+        // Only show error if not 401 (401 is handled by interceptor)
+        console.error('Failed to load analytics overview:', overview.reason);
+      }
+
+      // Handle health result
+      if (health.status === 'fulfilled') {
+        setStats(prev => ({
+          ...prev,
+          systemHealth: health.value.status === 'ok' ? 'healthy' : 'unhealthy',
+        }));
+      } else if (health.reason?.response?.status !== 401) {
+        // Only show error if not 401 (401 is handled by interceptor)
+        console.error('Failed to load system health:', health.reason);
+        setStats(prev => ({
+          ...prev,
+          systemHealth: 'unknown',
+        }));
+      }
     } catch (error) {
-      toast.error('Failed to load dashboard data');
+      // Only show toast for non-401 errors
+      if (error?.response?.status !== 401) {
+        toast.error('Failed to load dashboard data');
+      }
     } finally {
       setLoading(false);
     }
