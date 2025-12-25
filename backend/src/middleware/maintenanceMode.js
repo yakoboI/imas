@@ -2,6 +2,39 @@ const SystemSettingsService = require('../services/systemSettingsService');
 const jwt = require('jsonwebtoken');
 const jwtConfig = require('../config/jwt');
 const SuperAdmin = require('../models/SuperAdmin');
+const { sequelize } = require('../config/database');
+
+// Helper function to check if avatar_url column exists (cached)
+let avatarUrlColumnExists = null;
+const checkAvatarUrlColumn = async () => {
+  if (avatarUrlColumnExists !== null) {
+    return avatarUrlColumnExists;
+  }
+  
+  try {
+    const [results] = await sequelize.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'superadmins' AND column_name = 'avatar_url'
+    `);
+    avatarUrlColumnExists = results.length > 0;
+  } catch (error) {
+    avatarUrlColumnExists = false;
+  }
+  
+  return avatarUrlColumnExists;
+};
+
+// Helper function to get SuperAdmin with safe attribute selection
+const getSuperAdminSafely = async (id) => {
+  const hasAvatarUrl = await checkAvatarUrlColumn();
+  const attributes = ['id', 'email', 'name', 'role', 'status', 'last_login'];
+  if (hasAvatarUrl) {
+    attributes.push('avatar_url');
+  }
+  
+  return await SuperAdmin.findByPk(id, { attributes });
+};
 
 // Helper function to check if user is SuperAdmin from token
 const isSuperAdminFromToken = async (token) => {
@@ -12,7 +45,7 @@ const isSuperAdminFromToken = async (token) => {
     
     // Check if it's a superadmin token (has superadminId property)
     if (decoded.superadminId) {
-      const superadmin = await SuperAdmin.findByPk(decoded.superadminId);
+      const superadmin = await getSuperAdminSafely(decoded.superadminId);
       return superadmin && superadmin.status === 'active';
     }
     

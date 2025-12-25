@@ -6,11 +6,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "migrate": "node src/database/migrations/run.js",
+    "migrate:all": "node run-all-migrations-railway.js",
+    "migrate:avatar": "node run-avatar-migration-production.js",
     "seed": "node src/database/seeds/run.js",
     "test": "jest",
-    "install:win": "powershell -Command \"$env:PUPPETEER_SKIP_DOWNLOAD='true'; npm install\"",
-    "kill-port": "powershell -ExecutionPolicy Bypass -File kill-port.ps1"
+    "install:win": "powershell -Command \"$env:PUPPETEER_SKIP_DOWNLOAD='true'; npm install\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Normalize API base URL - remove trailing slashes to prevent double slashes
+const getBaseURL = () => {
+  const envUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  // Remove trailing slash if present
+  return envUrl.replace(/\/+$/, '');
+};
+
+const API_BASE_URL = getBaseURL();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -27,17 +34,43 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log error details for debugging (only in development)
+    if (import.meta.env.DEV) {
+      console.error('API Error:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        message: error.message,
+        data: error.response?.data,
+      });
+    }
+
+    // Handle 401 Unauthorized - redirect to login
     if (error.response?.status === 401) {
       localStorage.removeItem('superadmin_token');
       localStorage.removeItem('superadmin');
-      window.location.href = '/login';
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
+
+    // Handle 503 Service Unavailable - Maintenance mode
     if (error.response?.status === 503) {
-      // Service Unavailable - Maintenance mode
-      // SuperAdmin should still be able to access, but show message if needed
       const message = error.response?.data?.message || 'The system is currently under maintenance.';
       console.warn('Maintenance mode:', message);
     }
+
+    // Handle network errors and other failures
+    if (!error.response) {
+      console.error('Network error or server unreachable:', {
+        url: error.config?.url,
+        message: error.message,
+      });
+    }
+
+    // Always reject to allow components to handle errors
     return Promise.reject(error);
   }
 );

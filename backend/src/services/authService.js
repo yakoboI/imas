@@ -123,7 +123,32 @@ class AuthService {
 
   // SuperAdmin login
   static async loginSuperAdmin(email, password) {
-    const superadmin = await SuperAdmin.findOne({ where: { email } });
+    // Check if avatar_url column exists in the database
+    const { sequelize } = require('../config/database');
+    let hasAvatarUrlColumn = false;
+    
+    try {
+      const [results] = await sequelize.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'superadmins' AND column_name = 'avatar_url'
+      `);
+      hasAvatarUrlColumn = results.length > 0;
+    } catch (error) {
+      // If query fails, assume column doesn't exist
+      hasAvatarUrlColumn = false;
+    }
+
+    // Build attributes list based on whether avatar_url column exists
+    const attributes = ['id', 'email', 'password', 'name', 'role', 'status', 'last_login'];
+    if (hasAvatarUrlColumn) {
+      attributes.push('avatar_url');
+    }
+
+    const superadmin = await SuperAdmin.findOne({ 
+      where: { email },
+      attributes: attributes
+    });
 
     if (!superadmin) {
       throw new Error('Invalid email or password');
@@ -138,19 +163,27 @@ class AuthService {
       throw new Error('Invalid email or password');
     }
 
-    // Update last login
+    // Update last login (only update last_login, not avatar_url)
     await superadmin.update({ last_login: new Date() });
 
     const token = await this.generateSuperAdminToken(superadmin);
 
+    // Build response object, handling case where avatar_url might be undefined
+    const superadminResponse = {
+      id: superadmin.id,
+      email: superadmin.email,
+      name: superadmin.name,
+      role: superadmin.role
+    };
+
+    // Only include avatar_url if it exists (column exists and has a value)
+    if (hasAvatarUrlColumn && superadmin.avatar_url !== undefined && superadmin.avatar_url !== null) {
+      superadminResponse.avatar_url = superadmin.avatar_url;
+    }
+
     return {
       token,
-      superadmin: {
-        id: superadmin.id,
-        email: superadmin.email,
-        name: superadmin.name,
-        role: superadmin.role
-      }
+      superadmin: superadminResponse
     };
   }
 

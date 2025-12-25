@@ -17,10 +17,19 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+backend/logs/
+backend/backend/logs/
 
-# Uploads
+# Uploads & User Data
 uploads/
 backend/uploads/
+backend/backend/uploads/
+
+# Backups & Data
+backups/
+backend/backups/
+backend/data/
+backend/backend/
 
 # Build outputs
 dist/
@@ -54,4 +63,3 @@ coverage/
 # Production
 *.pem
 *.key
-

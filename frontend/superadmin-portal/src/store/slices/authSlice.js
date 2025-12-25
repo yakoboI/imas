@@ -22,11 +22,13 @@ export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValu
       await superAdminService.logout();
     } catch (error) {
       // Don't fail if backend call fails - still clear local storage
-      console.error('Failed to call logout endpoint:', error);
+      const errorMessage = error?.response?.data?.error || error?.message || 'Unknown error';
+      console.error('Failed to call logout endpoint:', errorMessage);
     }
   } catch (error) {
     // Continue with logout even if API call fails
-    console.error('Logout error:', error);
+    const errorMessage = error?.message || 'Unknown error';
+    console.error('Logout error:', errorMessage);
   } finally {
     // Always clear local storage
     localStorage.removeItem('superadmin_token');
