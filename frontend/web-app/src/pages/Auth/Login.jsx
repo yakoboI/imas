@@ -17,6 +17,8 @@ import {
   CircularProgress,
   Fade,
   Zoom,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Email as EmailIcon,
@@ -30,6 +32,8 @@ import { login, clearError } from '../../store/slices/authSlice';
 function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
@@ -145,11 +149,14 @@ function Login() {
       sx={{
         minHeight: '100vh',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: { xs: 'flex-start', sm: 'center' },
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         position: 'relative',
         overflow: 'hidden',
+        px: { xs: 0, sm: 2 },
+        py: { xs: 0, sm: 4 },
+        pt: { xs: 2, sm: 4 },
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -165,27 +172,39 @@ function Login() {
         },
       }}
     >
-      <Container component="main" maxWidth="xs" sx={{ position: 'relative', zIndex: 1 }}>
+      <Container 
+        component="main" 
+        maxWidth="xs" 
+        sx={{ 
+          position: 'relative', 
+          zIndex: 1,
+          px: { xs: 1, sm: 3 },
+          py: { xs: 0, sm: 4 },
+          width: '100%',
+          maxWidth: { xs: '100%', sm: '444px' }
+        }}
+      >
         <Fade in timeout={800}>
           <Box>
             <Zoom in timeout={600}>
               <Paper
                 elevation={24}
                 sx={{
-                  p: { xs: 3, sm: 4 },
+                  p: { xs: 2, sm: 4 },
                   width: '100%',
-                  borderRadius: 4,
+                  borderRadius: { xs: 0, sm: 4 },
                   background: 'rgba(255, 255, 255, 0.95)',
                   backdropFilter: 'blur(10px)',
-                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                  boxShadow: { xs: 'none', sm: '0 8px 32px 0 rgba(31, 38, 135, 0.37)' },
                 }}
               >
-                <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Box sx={{ textAlign: 'center', mb: { xs: 2, sm: 3 } }}>
                   <Box
                     sx={{
-                      width: 64,
-                      height: 64,
-                      margin: '0 auto 16px',
+                      width: { xs: 56, sm: 64 },
+                      height: { xs: 56, sm: 64 },
+                      margin: '0 auto',
+                      mb: { xs: 1.5, sm: 2 },
                       borderRadius: '50%',
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       display: 'flex',
@@ -194,24 +213,28 @@ function Login() {
                       boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
                     }}
                   >
-                    <LoginIcon sx={{ fontSize: 32, color: 'white' }} />
+                    <LoginIcon sx={{ fontSize: { xs: 28, sm: 32 }, color: 'white' }} />
                   </Box>
                   <Typography
                     component="h1"
                     variant="h4"
                     sx={{
-                      fontSize: { xs: '1.75rem', sm: '2.125rem' },
+                      fontSize: { xs: '1.5rem', sm: '2.125rem' },
                       fontWeight: 700,
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       backgroundClip: 'text',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
-                      mb: 1,
+                      mb: { xs: 0.5, sm: 1 },
                     }}
                   >
                     Welcome Back
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                  >
                     Sign in to your Inventory System account
                   </Typography>
                 </Box>
@@ -231,7 +254,7 @@ function Login() {
                   </Alert>
                 )}
 
-                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+                <Box component="form" onSubmit={handleSubmit} sx={{ mt: { xs: 0.5, sm: 1 } }}>
                   <TextField
                     margin="normal"
                     required
@@ -246,14 +269,19 @@ function Login() {
                     onBlur={handleBlur}
                     error={touched.email && !!validationErrors.email}
                     helperText={touched.email && validationErrors.email}
+                    size={isMobile ? 'small' : 'medium'}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <EmailIcon color={touched.email && validationErrors.email ? 'error' : 'action'} />
+                          <EmailIcon 
+                            sx={{ fontSize: { xs: 20, sm: 24 } }}
+                            color={touched.email && validationErrors.email ? 'error' : 'action'} 
+                          />
                         </InputAdornment>
                       ),
                     }}
                     sx={{
+                      mt: { xs: 1.5, sm: 2 },
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
                         transition: 'all 0.3s ease',
@@ -281,10 +309,14 @@ function Login() {
                     onBlur={handleBlur}
                     error={touched.password && !!validationErrors.password}
                     helperText={touched.password && validationErrors.password}
+                    size={isMobile ? 'small' : 'medium'}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <LockIcon color={touched.password && validationErrors.password ? 'error' : 'action'} />
+                          <LockIcon 
+                            sx={{ fontSize: { xs: 20, sm: 24 } }}
+                            color={touched.password && validationErrors.password ? 'error' : 'action'} 
+                          />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -293,6 +325,7 @@ function Login() {
                             aria-label="toggle password visibility"
                             onClick={handleTogglePasswordVisibility}
                             edge="end"
+                            size="small"
                             sx={{ color: 'text.secondary' }}
                           >
                             {showPassword ? <VisibilityOff /> : <Visibility />}
@@ -301,6 +334,7 @@ function Login() {
                       ),
                     }}
                     sx={{
+                      mt: { xs: 1.5, sm: 2 },
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
                         transition: 'all 0.3s ease',
@@ -314,7 +348,14 @@ function Login() {
                       },
                     }}
                   />
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    justifyContent: 'space-between', 
+                    alignItems: { xs: 'flex-start', sm: 'center' }, 
+                    mt: { xs: 1.5, sm: 2 },
+                    gap: { xs: 1, sm: 0 }
+                  }}>
                     <FormControlLabel
                       control={
                         <Checkbox
@@ -322,9 +363,10 @@ function Login() {
                           checked={formData.rememberMe}
                           onChange={handleChange}
                           color="primary"
+                          size="small"
                         />
                       }
-                      label="Remember me"
+                      label={<Typography variant="body2">Remember me</Typography>}
                     />
                     <Link
                       component={RouterLink}
@@ -334,6 +376,7 @@ function Login() {
                         textDecoration: 'none',
                         color: 'primary.main',
                         fontWeight: 500,
+                        fontSize: { xs: '0.8rem', sm: '0.875rem' },
                         '&:hover': {
                           textDecoration: 'underline',
                         },
@@ -349,12 +392,12 @@ function Login() {
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LoginIcon />}
                     disabled={loading || !isFormValid}
                     sx={{
-                      mt: 3,
-                      mb: 2,
-                      py: 1.5,
+                      mt: { xs: 2, sm: 3 },
+                      mb: { xs: 1.5, sm: 2 },
+                      py: { xs: 1.25, sm: 1.5 },
                       borderRadius: 2,
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      fontSize: '1rem',
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
                       fontWeight: 600,
                       textTransform: 'none',
                       boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
@@ -372,8 +415,12 @@ function Login() {
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
                   </Button>
-                  <Box sx={{ textAlign: 'center', mt: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
+                  <Box sx={{ textAlign: 'center', mt: { xs: 1.5, sm: 2 } }}>
+                    <Typography 
+                      variant="body2" 
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                    >
                       Don't have an account?{' '}
                       <Link
                         component={RouterLink}
@@ -382,6 +429,7 @@ function Login() {
                           textDecoration: 'none',
                           color: 'primary.main',
                           fontWeight: 600,
+                          fontSize: { xs: '0.8rem', sm: '0.875rem' },
                           '&:hover': {
                             textDecoration: 'underline',
                           },
