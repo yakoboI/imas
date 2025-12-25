@@ -1,11 +1,13 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Box } from '@mui/material';
 
 import Layout from './components/layout/Layout';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile/ViewProfile';
 import EditProfile from './pages/Profile/EditProfile';
@@ -27,7 +29,12 @@ import Users from './pages/Users';
 
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useSelector((state) => state.auth);
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  const location = useLocation();
+  return isAuthenticated ? (
+    children
+  ) : (
+    <Navigate to="/login" replace state={{ from: location }} />
+  );
 }
 
 function App() {
@@ -36,6 +43,8 @@ function App() {
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Protected Routes */}
       <Route

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Container,
@@ -9,11 +9,17 @@ import {
   Typography,
   Box,
   Alert,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
-import { Login as LoginIcon } from '@mui/icons-material';
+import { Login as LoginIcon, Visibility, VisibilityOff } from '@mui/icons-material';
 import { login, clearError } from '../../store/slices/authSlice';
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function Login() {
+  const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
@@ -22,12 +28,30 @@ function Login() {
     email: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+
+  const destination = useMemo(() => {
+    const from = location.state?.from?.pathname;
+    return from && from !== '/login' ? from : '/dashboard';
+  }, [location.state]);
+
+  const emailError = useMemo(() => {
+    if (!formData.email) return '';
+    if (!emailRegex.test(formData.email.trim())) return 'Enter a valid email address';
+    return '';
+  }, [formData.email]);
+
+  const passwordError = useMemo(() => {
+    if (!formData.password) return '';
+    if (formData.password.length < 6) return 'Password looks too short';
+    return '';
+  }, [formData.password]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate(destination, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, destination]);
 
   useEffect(() => {
     return () => {
@@ -36,6 +60,7 @@ function Login() {
   }, [dispatch]);
 
   const handleChange = (e) => {
+    if (error) dispatch(clearError());
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -44,7 +69,9 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(login(formData));
+    const email = formData.email.trim();
+    const password = formData.password;
+    dispatch(login({ email, password }));
   };
 
   return (
@@ -99,6 +126,8 @@ function Login() {
               autoFocus
               value={formData.email}
               onChange={handleChange}
+              error={!!emailError}
+              helperText={emailError}
             />
             <TextField
               margin="normal"
@@ -106,11 +135,26 @@ function Login() {
               fullWidth
               name="password"
               label="Password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               id="password"
               autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
+              error={!!passwordError}
+              helperText={passwordError}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowPassword((v) => !v)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
             <Button
               type="submit"
@@ -118,9 +162,22 @@ function Login() {
               variant="contained"
               startIcon={<LoginIcon />}
               sx={{ mt: 3, mb: 2, bgcolor: 'primary.main' }}
-              disabled={loading}
+              disabled={
+                loading ||
+                !formData.email.trim() ||
+                !formData.password ||
+                !!emailError ||
+                !!passwordError
+              }
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={18} color="inherit" />
+                  Signing In...
+                </Box>
+              ) : (
+                'Sign In'
+              )}
             </Button>
           </Box>
         </Paper>
