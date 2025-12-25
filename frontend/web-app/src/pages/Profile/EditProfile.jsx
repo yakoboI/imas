@@ -9,12 +9,17 @@ import {
   Box,
   Grid,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { updateProfile, fetchProfile } from '../../store/slices/userSlice';
 import { toast } from 'react-toastify';
 import { CircularProgress } from '@mui/material';
+import { ArrowBack } from '@mui/icons-material';
 
 function EditProfile() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { profile, loading } = useSelector((state) => state.user);
@@ -108,9 +113,28 @@ function EditProfile() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Edit Profile
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2,
+          mb: 1
+        }}>
+          <Button 
+            startIcon={<ArrowBack />} 
+            onClick={() => navigate('/profile')}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
+            Back
+          </Button>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Edit Profile
+          </Typography>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ ml: { xs: 0, sm: 7 } }}>
+          Update your personal information and contact details
+        </Typography>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -265,11 +289,27 @@ function EditProfile() {
             </Grid>
           </Grid>
 
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3 }}>
-            <Button variant="outlined" onClick={() => navigate('/profile')}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2, 
+            justifyContent: 'flex-end', 
+            mt: 3 
+          }}>
+            <Button 
+              variant="outlined" 
+              onClick={() => navigate('/profile')}
+              fullWidth={isSmallScreen}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="contained">
+            <Button 
+              type="submit" 
+              variant="contained"
+              fullWidth={isSmallScreen}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
               Save Changes
             </Button>
           </Box>

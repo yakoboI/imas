@@ -34,6 +34,10 @@ const SuperAdmin = sequelize.define('SuperAdmin', {
   last_login: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  avatar_url: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   tableName: 'superadmins',

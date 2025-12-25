@@ -16,6 +16,19 @@ class DashboardController {
         where: { tenant_id: tenantId }
       });
 
+      // Get total quantity (sum of all inventory quantities across all warehouses)
+      const totalQuantityResult = await Inventory.findAll({
+        where: { tenant_id: tenantId },
+        attributes: [
+          [fn('SUM', col('quantity')), 'total_quantity']
+        ],
+        raw: true
+      });
+      
+      const totalQuantity = totalQuantityResult[0]?.total_quantity 
+        ? parseInt(totalQuantityResult[0].total_quantity) 
+        : 0;
+
       // Get total orders
       const totalOrders = await Order.count({
         where: { tenant_id: tenantId }
@@ -64,7 +77,9 @@ class DashboardController {
         }
       );
       
-      const lowStockProducts = lowStockResult[0]?.count ? parseInt(lowStockResult[0].count) : 0;
+      const lowStockProducts = lowStockResult[0]?.count 
+        ? parseInt(lowStockResult[0].count, 10) 
+        : 0;
 
       // Get pending orders count
       const pendingOrders = await Order.count({
@@ -73,6 +88,24 @@ class DashboardController {
           status: 'pending'
         }
       });
+
+      // Get completed orders without receipts (sales that need receipts)
+      const ordersWithoutReceiptsResult = await sequelize.query(
+        `SELECT COUNT(DISTINCT o.id) as count
+         FROM orders o
+         LEFT JOIN receipts r ON o.id = r.order_id AND r.status = 'active'
+         WHERE o.tenant_id = :tenantId
+         AND o.status = 'completed'
+         AND r.id IS NULL`,
+        {
+          replacements: { tenantId },
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+      
+      const ordersWithoutReceipts = ordersWithoutReceiptsResult[0]?.count 
+        ? parseInt(ordersWithoutReceiptsResult[0].count, 10) 
+        : 0;
 
       // Get total customers
       const totalCustomers = await Customer.count({
@@ -102,11 +135,13 @@ class DashboardController {
       res.json({
         stats: {
           totalProducts,
+          totalQuantity,
           totalOrders,
           totalReceipts,
           totalRevenue: totalRevenue.toFixed(2),
           totalCustomers,
           pendingOrders,
+          ordersWithoutReceipts,
           lowStockProducts,
           todayRevenue: todayRevenue.toFixed(2)
         }

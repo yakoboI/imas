@@ -16,6 +16,8 @@ import {
   TableRow,
   Divider,
   Stack,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Assessment as ReportsIcon,
@@ -27,6 +29,8 @@ import userService from '../services/userService';
 import { formatCurrency } from '../utils/currency';
 
 function Reports() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState('sales');
   const [dateRange, setDateRange] = useState('month');
@@ -118,6 +122,7 @@ function Reports() {
     try {
       setLoading(true);
       setData(null);
+      setAllReportsData(null); // Clear all reports data when generating specific report
 
       const filters = buildFilters();
 
@@ -147,6 +152,7 @@ function Reports() {
     try {
       setLoadingAll(true);
       setAllReportsData(null);
+      setData(null); // Clear specific report data when printing all reports
 
       const filters = buildFilters();
 
@@ -1079,11 +1085,11 @@ function Reports() {
           },
         }}
       >
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
           Reports
         </Typography>
         {tenantName && (
-          <Typography variant="subtitle1" color="text.secondary">
+          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
             Tenant: {tenantName}
           </Typography>
         )}
@@ -1182,6 +1188,7 @@ function Reports() {
                 fullWidth
                 onClick={handleGenerateReport}
                 disabled={loading || loadingAll}
+                size={isSmallScreen ? 'small' : 'medium'}
                 sx={{ mb: 1 }}
               >
                 Generate report
@@ -1192,6 +1199,7 @@ function Reports() {
                 startIcon={<PrintIcon />}
                 onClick={handlePrintAllReports}
                 disabled={loading || loadingAll}
+                size={isSmallScreen ? 'small' : 'medium'}
               >
                 Print all reports
               </Button>

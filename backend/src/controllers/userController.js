@@ -255,20 +255,14 @@ class UserController {
   // Get notification preferences
   static async getNotificationPreferences(req, res, next) {
     try {
-      // Log for debugging
-      console.log('Getting notification preferences for user:', req.user.id);
-
       const user = await User.findByPk(req.user.id, {
         attributes: ['id', 'notification_preferences'],
         raw: false // Ensure we get a Sequelize model instance for proper JSONB handling
       });
 
       if (!user) {
-        console.log('User not found:', req.user.id);
         return res.status(404).json({ error: 'User not found' });
       }
-
-      console.log('User found, notification_preferences type:', typeof user.notification_preferences);
 
       // Handle JSONB field - Sequelize should auto-parse, but ensure it's an object
       let preferences = user.get ? user.get('notification_preferences') : user.notification_preferences;
@@ -285,7 +279,6 @@ class UserController {
       
       // If preferences is null, undefined, or not an object, use defaults
       if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) {
-        console.log('Using default preferences');
         preferences = {
           emailNotifications: true,
           smsNotifications: false,
@@ -367,6 +360,62 @@ class UserController {
     }
   }
 
+  // Get tenant info with user count (Admin only)
+  static async getTenantInfo(req, res, next) {
+    try {
+      const tenantId = req.tenantId;
+      const Tenant = require('../models/Tenant');
+      const Warehouse = require('../models/Warehouse');
+      
+      const tenant = await Tenant.findByPk(tenantId, {
+        attributes: ['id', 'name', 'plan_type', 'max_users', 'max_warehouses', 'status']
+      });
+
+      if (!tenant) {
+        return res.status(404).json({ error: 'Tenant not found' });
+      }
+
+      // Count active users
+      const currentUserCount = await User.count({ 
+        where: { tenant_id: tenantId, status: 'active' } 
+      });
+
+      // Count active warehouses
+      const currentWarehouseCount = await Warehouse.count({ 
+        where: { tenant_id: tenantId, status: 'active' } 
+      });
+
+      res.json({
+        tenant: {
+          id: tenant.id,
+          name: tenant.name,
+          planType: tenant.plan_type,
+          maxUsers: tenant.max_users,
+          maxWarehouses: tenant.max_warehouses,
+          status: tenant.status
+        },
+        userLimit: {
+          current: currentUserCount,
+          max: tenant.max_users,
+          remaining: Math.max(0, tenant.max_users - currentUserCount),
+          canAddMore: currentUserCount < tenant.max_users
+        },
+        warehouseLimit: {
+          current: currentWarehouseCount,
+          max: tenant.max_warehouses,
+          remaining: Math.max(0, tenant.max_warehouses === 999999 ? 999999 : tenant.max_warehouses - currentWarehouseCount),
+          canAddMore: tenant.max_warehouses === 999999 || currentWarehouseCount < tenant.max_warehouses
+        },
+        userCount: currentUserCount,
+        maxUsers: tenant.max_users,
+        warehouseCount: currentWarehouseCount,
+        maxWarehouses: tenant.max_warehouses
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Get all users (Admin only)
   static async getAllUsers(req, res, next) {
     try {
@@ -387,6 +436,16 @@ class UserController {
         order: [['created_at', 'DESC']]
       });
 
+      // Get tenant info for user limit
+      const Tenant = require('../models/Tenant');
+      const tenant = await Tenant.findByPk(tenantId, {
+        attributes: ['max_users']
+      });
+
+      const activeUserCount = await User.count({ 
+        where: { tenant_id: tenantId, status: 'active' } 
+      });
+
       res.json({
         users: rows,
         pagination: {
@@ -394,6 +453,12 @@ class UserController {
           page: parseInt(page),
           limit: parseInt(limit),
           totalPages: Math.ceil(count / limit)
+        },
+        userLimit: {
+          current: activeUserCount,
+          max: tenant?.max_users || 5,
+          remaining: Math.max(0, (tenant?.max_users || 5) - activeUserCount),
+          canAddMore: activeUserCount < (tenant?.max_users || 5)
         }
       });
     } catch (error) {
@@ -416,14 +481,52 @@ class UserController {
         return res.status(409).json({ error: 'User with this email already exists' });
       }
 
+      // Check max_users limit
+      const Tenant = require('../models/Tenant');
+      const tenant = await Tenant.findByPk(tenantId);
+      
+      if (!tenant) {
+        return res.status(404).json({ error: 'Tenant not found' });
+      }
+
+      // Count current active users
+      const currentUserCount = await User.count({ 
+        where: { tenant_id: tenantId, status: 'active' } 
+      });
+
+      // Check if adding this user would exceed max_users limit
+      if (currentUserCount >= tenant.max_users) {
+        return res.status(403).json({ 
+          error: 'User limit reached',
+          message: `You have reached the maximum number of users (${tenant.max_users}) allowed for your plan. Please contact your administrator to upgrade your plan or increase the user limit.`
+        });
+      }
+
       const user = await AuthService.registerUser(
         { email, password, role: role || 'viewer', ...userData },
         tenantId
       );
 
+      // Log audit trail
+      await AuditService.logAction({
+        tenant_id: tenantId,
+        user_id: req.user.id,
+        action: 'CREATE_USER',
+        entity_type: 'User',
+        entity_id: user.id,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'],
+        description: `User ${email} created by admin`
+      }).catch(err => console.error('Failed to log audit trail:', err));
+
       res.status(201).json({
         message: 'User created successfully',
-        user
+        user,
+        userLimit: {
+          current: currentUserCount + 1,
+          max: tenant.max_users,
+          remaining: tenant.max_users - (currentUserCount + 1)
+        }
       });
     } catch (error) {
       next(error);

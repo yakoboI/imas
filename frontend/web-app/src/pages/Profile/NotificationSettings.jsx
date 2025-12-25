@@ -7,11 +7,23 @@ import {
   Switch,
   Button,
   Box,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import userService from '../../services/userService';
 import { toast } from 'react-toastify';
+import { ArrowBack } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import {
+  subscribeToPushNotifications,
+  unsubscribeFromPushNotifications,
+  isSubscribedToPushNotifications
+} from '../../utils/pushNotifications';
 
 function NotificationSettings() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -22,10 +34,24 @@ function NotificationSettings() {
     reportDigests: false,
   });
   const [loading, setLoading] = useState(false);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [checkingPush, setCheckingPush] = useState(true);
 
   useEffect(() => {
     loadPreferences();
+    checkPushSubscription();
   }, []);
+
+  const checkPushSubscription = async () => {
+    try {
+      const subscribed = await isSubscribedToPushNotifications();
+      setPushSubscribed(subscribed);
+    } catch (error) {
+      console.error('Error checking push subscription:', error);
+    } finally {
+      setCheckingPush(false);
+    }
+  };
 
   const loadPreferences = async () => {
     try {
@@ -46,11 +72,49 @@ function NotificationSettings() {
     }
   };
 
-  const handleChange = (name) => (event) => {
-    setPreferences({
-      ...preferences,
-      [name]: event.target.checked,
-    });
+  const handleChange = (name) => async (event) => {
+    const checked = event.target.checked;
+    
+    // Handle push notifications separately
+    if (name === 'pushNotifications') {
+      if (checked && !pushSubscribed) {
+        // User wants to enable push notifications
+        try {
+          await subscribeToPushNotifications();
+          setPushSubscribed(true);
+          setPreferences({
+            ...preferences,
+            [name]: true,
+          });
+          toast.success('Push notifications enabled');
+        } catch (error) {
+          console.error('Error subscribing to push:', error);
+          toast.error('Failed to enable push notifications. Please check browser permissions.');
+          // Don't update preference if subscription failed
+          return;
+        }
+      } else if (!checked && pushSubscribed) {
+        // User wants to disable push notifications
+        try {
+          await unsubscribeFromPushNotifications();
+          setPushSubscribed(false);
+          setPreferences({
+            ...preferences,
+            [name]: false,
+          });
+          toast.success('Push notifications disabled');
+        } catch (error) {
+          console.error('Error unsubscribing from push:', error);
+          toast.error('Failed to disable push notifications');
+        }
+      }
+    } else {
+      // For other preferences, just update state
+      setPreferences({
+        ...preferences,
+        [name]: checked,
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -67,11 +131,30 @@ function NotificationSettings() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Notification Settings
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2,
+          mb: 1
+        }}>
+          <Button 
+            startIcon={<ArrowBack />} 
+            onClick={() => navigate('/profile')}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
+            Back
+          </Button>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Notification Settings
+          </Typography>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ ml: { xs: 0, sm: 7 } }}>
+          Configure your notification preferences and alerts
+        </Typography>
+      </Box>
 
-      <Paper sx={{ p: 3 }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 } }}>
         <Typography variant="h6" gutterBottom>
           Email Notifications
         </Typography>
@@ -104,12 +187,23 @@ function NotificationSettings() {
         <FormControlLabel
           control={
             <Switch
-              checked={preferences.pushNotifications}
+              checked={preferences.pushNotifications && pushSubscribed}
               onChange={handleChange('pushNotifications')}
+              disabled={checkingPush}
             />
           }
           label="Enable push notifications"
         />
+        {checkingPush && (
+          <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: 'block' }}>
+            Checking subscription status...
+          </Typography>
+        )}
+        {!checkingPush && !pushSubscribed && preferences.pushNotifications && (
+          <Typography variant="caption" color="warning.main" sx={{ ml: 4, display: 'block' }}>
+            Browser permission required. Click the switch to enable.
+          </Typography>
+        )}
 
         <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
           Alert Preferences
@@ -142,11 +236,17 @@ function NotificationSettings() {
           label="Daily report digests"
         />
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          mt: 3 
+        }}>
           <Button
             variant="contained"
             onClick={handleSave}
             disabled={loading}
+            size={isSmallScreen ? 'small' : 'medium'}
+            fullWidth={isSmallScreen}
           >
             Save Preferences
           </Button>

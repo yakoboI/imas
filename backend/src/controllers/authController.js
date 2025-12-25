@@ -2,6 +2,7 @@ const AuthService = require('../services/authService');
 const User = require('../models/User');
 const Tenant = require('../models/Tenant');
 const AuditService = require('../services/auditService');
+const SystemSettingsService = require('../services/systemSettingsService');
 
 class AuthController {
   // User login
@@ -39,6 +40,34 @@ class AuthController {
 
       if (!email || !password || !tenantName || !subdomain) {
         return res.status(400).json({ error: 'All required fields must be provided' });
+      }
+
+      // Check system settings
+      const settings = await SystemSettingsService.getSettings();
+      
+      // Check maintenance mode
+      if (settings.maintenanceMode) {
+        return res.status(503).json({
+          error: 'Service Unavailable',
+          message: 'The system is currently under maintenance. New registrations are temporarily disabled.'
+        });
+      }
+      
+      // Check if new registrations are allowed
+      if (settings.allowNewRegistrations === false) {
+        return res.status(403).json({
+          error: 'Registration Disabled',
+          message: 'New tenant registrations are currently disabled.'
+        });
+      }
+      
+      // Check max tenants limit
+      const currentTenantCount = await Tenant.count();
+      if (settings.maxTenants && currentTenantCount >= settings.maxTenants) {
+        return res.status(403).json({
+          error: 'Registration Limit Reached',
+          message: `The maximum number of tenants (${settings.maxTenants}) has been reached.`
+        });
       }
 
       // Check if tenant subdomain exists
@@ -84,8 +113,22 @@ class AuthController {
   // Logout
   static async logout(req, res, next) {
     try {
-      // In a real app, you might want to invalidate the token
-      // For now, just return success
+      const AuditService = require('../services/auditService');
+      
+      // Log logout action
+      if (req.user && req.user.tenantId) {
+        await AuditService.logAction({
+          tenant_id: req.user.tenantId,
+          user_id: req.user.id,
+          action: 'LOGOUT',
+          entity_type: 'user',
+          entity_id: req.user.id,
+          description: `User ${req.user.email} logged out manually`,
+          ip_address: req.ip,
+          user_agent: req.headers['user-agent']
+        });
+      }
+      
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
       next(error);

@@ -16,6 +16,12 @@ const Subscription = require('./Subscription');
 const AuditLog = require('./AuditLog');
 const SystemLog = require('./SystemLog');
 const SystemLogArchive = require('./SystemLogArchive');
+const PushSubscription = require('./PushSubscription');
+const AlertTracking = require('./AlertTracking');
+const StockSession = require('./StockSession');
+const SubSession = require('./SubSession');
+const StockAdjustment = require('./StockAdjustment');
+const DailySummary = require('./DailySummary');
 
 // Define Relationships
 
@@ -34,6 +40,7 @@ User.hasMany(User, { foreignKey: 'reports_to', as: 'subordinates' });
 User.hasMany(Order, { foreignKey: 'created_by', as: 'orders' });
 User.hasMany(Receipt, { foreignKey: 'created_by', as: 'receipts' });
 User.hasMany(AuditLog, { foreignKey: 'user_id', as: 'auditLogs' });
+User.hasMany(PushSubscription, { foreignKey: 'user_id', as: 'pushSubscriptions' });
 
 // Product relationships
 Product.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
@@ -120,6 +127,36 @@ SuperAdmin.hasMany(SystemLog, { foreignKey: 'superadmin_id', as: 'systemLogs' })
 SuperAdmin.hasMany(SystemLogArchive, { foreignKey: 'superadmin_id', as: 'archivedSystemLogs' });
 SuperAdmin.hasMany(AuditLog, { foreignKey: 'superadmin_id', as: 'auditLogs' });
 
+// PushSubscription relationships
+PushSubscription.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// AlertTracking relationships
+AlertTracking.belongsTo(require('./Tenant'), { foreignKey: 'tenant_id', as: 'tenant' });
+AlertTracking.belongsTo(require('./Inventory'), { foreignKey: 'inventory_id', as: 'inventory' });
+
+// StockSession relationships
+StockSession.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
+StockSession.hasMany(SubSession, { foreignKey: 'parent_session_id', as: 'subSessions' });
+StockSession.hasMany(StockAdjustment, { foreignKey: 'session_id', as: 'adjustments' });
+StockSession.hasOne(DailySummary, { foreignKey: 'session_id', as: 'summary' });
+
+// SubSession relationships
+SubSession.belongsTo(StockSession, { foreignKey: 'parent_session_id', as: 'parentSession' });
+SubSession.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
+SubSession.belongsTo(User, { foreignKey: 'opened_by_user_id', as: 'openedBy' });
+SubSession.hasMany(StockAdjustment, { foreignKey: 'sub_session_id', as: 'adjustments' });
+
+// StockAdjustment relationships
+StockAdjustment.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
+StockAdjustment.belongsTo(StockSession, { foreignKey: 'session_id', as: 'session' });
+StockAdjustment.belongsTo(SubSession, { foreignKey: 'sub_session_id', as: 'subSession' });
+StockAdjustment.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+StockAdjustment.belongsTo(User, { foreignKey: 'adjusted_by', as: 'adjustedBy' });
+
+// DailySummary relationships
+DailySummary.belongsTo(StockSession, { foreignKey: 'session_id', as: 'session' });
+DailySummary.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
+
 module.exports = {
   Tenant,
   SuperAdmin,
@@ -138,6 +175,12 @@ module.exports = {
   Subscription,
   AuditLog,
   SystemLog,
-  SystemLogArchive
+  SystemLogArchive,
+  PushSubscription,
+  AlertTracking,
+  StockSession,
+  SubSession,
+  StockAdjustment,
+  DailySummary
 };
 

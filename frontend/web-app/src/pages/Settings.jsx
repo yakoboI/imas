@@ -14,6 +14,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Save, Settings as SettingsIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -22,6 +24,8 @@ import { useSelector } from 'react-redux';
 import { CURRENCIES } from '../utils/currency';
 
 function Settings() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const user = useSelector((state) => state.auth.user);
   const isAdmin = user?.role === 'admin';
   const [loading, setLoading] = useState(false);
@@ -34,10 +38,15 @@ function Settings() {
     currency: 'USD',
     timezone: 'UTC',
     dateFormat: 'YYYY-MM-DD',
-    emailNotifications: true,
-    lowStockAlerts: true,
-    orderNotifications: true,
     lowStockThreshold: 10,
+  });
+  const [company, setCompany] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    logo: '',
+    taxId: ''
   });
 
   useEffect(() => {
@@ -51,7 +60,20 @@ function Settings() {
       if (response.settings) {
         setSettings((prev) => ({
           ...prev,
-          ...response.settings,
+          currency: response.settings.currency || 'USD',
+          timezone: response.settings.timezone || 'UTC',
+          dateFormat: response.settings.dateFormat || 'YYYY-MM-DD',
+          lowStockThreshold: response.settings.lowStockThreshold || 10,
+        }));
+      }
+      if (response.company) {
+        setCompany(response.company);
+        setSettings((prev) => ({
+          ...prev,
+          companyName: response.company.name || '',
+          companyEmail: response.company.email || '',
+          companyPhone: response.company.phone || '',
+          companyAddress: response.company.address || '',
         }));
       }
     } catch (error) {
@@ -70,8 +92,20 @@ function Settings() {
 
     setSaving(true);
     try {
-      await tenantSettingsService.updateSettings(settings);
+      const updateData = {
+        companyName: settings.companyName,
+        companyEmail: settings.companyEmail,
+        companyPhone: settings.companyPhone,
+        companyAddress: settings.companyAddress,
+        currency: settings.currency,
+        timezone: settings.timezone,
+        dateFormat: settings.dateFormat,
+        lowStockThreshold: settings.lowStockThreshold,
+      };
+      await tenantSettingsService.updateSettings(updateData);
       toast.success('Settings saved successfully');
+      // Reload settings to get updated values
+      await loadSettings();
     } catch (error) {
       console.error('Failed to save settings:', error);
       toast.error(error.response?.data?.error || 'Failed to save settings');
@@ -90,12 +124,16 @@ function Settings() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Settings
-      </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
-        Manage your account and application settings
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+          Settings
+        </Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          {isAdmin 
+            ? 'Manage company information and system settings (Admin only)'
+            : 'View company information and system settings. Only administrators can make changes.'}
+        </Typography>
+      </Box>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
@@ -105,12 +143,20 @@ function Settings() {
             </Typography>
             <Divider sx={{ my: 2 }} />
             <Grid container spacing={2}>
+              {!isAdmin && (
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="warning.main" sx={{ mb: 2, fontStyle: 'italic' }}>
+                    ⚠️ Company information can only be updated by administrators
+                  </Typography>
+                </Grid>
+              )}
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Company Name"
                   value={settings.companyName}
                   onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
+                  disabled={!isAdmin}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -120,6 +166,7 @@ function Settings() {
                   type="email"
                   value={settings.companyEmail}
                   onChange={(e) => setSettings({ ...settings, companyEmail: e.target.value })}
+                  disabled={!isAdmin}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -128,6 +175,7 @@ function Settings() {
                   label="Company Phone"
                   value={settings.companyPhone}
                   onChange={(e) => setSettings({ ...settings, companyPhone: e.target.value })}
+                  disabled={!isAdmin}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -138,6 +186,7 @@ function Settings() {
                   rows={2}
                   value={settings.companyAddress}
                   onChange={(e) => setSettings({ ...settings, companyAddress: e.target.value })}
+                  disabled={!isAdmin}
                 />
               </Grid>
             </Grid>
@@ -166,12 +215,20 @@ function Settings() {
                   </Select>
                 </FormControl>
               </Grid>
+              {!isAdmin && (
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="warning.main" sx={{ mb: 2, fontStyle: 'italic' }}>
+                    ⚠️ System settings can only be updated by administrators
+                  </Typography>
+                </Grid>
+              )}
               <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   label="Timezone"
                   value={settings.timezone}
                   onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+                  disabled={!isAdmin}
                 />
               </Grid>
               <Grid item xs={12} sm={4}>
@@ -180,6 +237,7 @@ function Settings() {
                   label="Date Format"
                   value={settings.dateFormat}
                   onChange={(e) => setSettings({ ...settings, dateFormat: e.target.value })}
+                  disabled={!isAdmin}
                 />
               </Grid>
             </Grid>
@@ -188,6 +246,11 @@ function Settings() {
               Inventory Settings
             </Typography>
             <Divider sx={{ my: 2 }} />
+            {!isAdmin && (
+              <Typography variant="body2" color="warning.main" sx={{ mb: 2, fontStyle: 'italic' }}>
+                ⚠️ Inventory settings can only be updated by administrators
+              </Typography>
+            )}
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -203,53 +266,14 @@ function Settings() {
               </Grid>
             </Grid>
 
-            <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-              Notifications
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Box>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.emailNotifications}
-                    onChange={(e) => setSettings({ ...settings, emailNotifications: e.target.checked })}
-                    disabled={!isAdmin}
-                  />
-                }
-                label="Email Notifications"
-              />
-            </Box>
-            <Box>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.lowStockAlerts}
-                    onChange={(e) => setSettings({ ...settings, lowStockAlerts: e.target.checked })}
-                    disabled={!isAdmin}
-                  />
-                }
-                label="Low Stock Alerts"
-              />
-            </Box>
-            <Box>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.orderNotifications}
-                    onChange={(e) => setSettings({ ...settings, orderNotifications: e.target.checked })}
-                    disabled={!isAdmin}
-                  />
-                }
-                label="Order Notifications"
-              />
-            </Box>
-
             <Button
               variant="contained"
               startIcon={<Save />}
               onClick={handleSave}
               disabled={saving || !isAdmin}
               sx={{ mt: 3 }}
+              size={isSmallScreen ? 'small' : 'medium'}
+              fullWidth={isSmallScreen}
             >
               {saving ? 'Saving...' : 'Save Settings'}
             </Button>
@@ -267,9 +291,16 @@ function Settings() {
             <Typography variant="h6" gutterBottom>
               Settings Help
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Configure your system preferences, company information, and notification settings here.
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {isAdmin 
+                ? 'Configure company information and system-wide settings. These settings apply to all users in your organization.'
+                : 'These settings are managed by administrators. For personal preferences like notifications, visit your Profile settings.'}
             </Typography>
+            {!isAdmin && (
+              <Typography variant="body2" color="primary" sx={{ mt: 2 }}>
+                💡 Tip: Personal notification preferences can be managed in Profile → Notification Settings
+              </Typography>
+            )}
           </Paper>
         </Grid>
       </Grid>

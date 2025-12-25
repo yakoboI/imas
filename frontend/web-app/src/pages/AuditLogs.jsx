@@ -14,6 +14,8 @@ import {
   TextField,
   InputAdornment,
   Button,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Search,
@@ -24,6 +26,8 @@ import auditService from '../services/auditService';
 import { toast } from 'react-toastify';
 
 function AuditLogs() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,6 +43,10 @@ function AuditLogs() {
     } catch (error) {
       console.error('Failed to load audit logs:', error);
       setLogs([]);
+      // Only show error toast if it's not a connection refused error (backend might be down)
+      if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNREFUSED') {
+        toast.error('Failed to load audit logs. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
@@ -76,9 +84,29 @@ function AuditLogs() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Audit Logs</Typography>
-        <Button variant="outlined" startIcon={<GetApp />} onClick={handleExport}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Audit Logs
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Track system activities and user actions
+          </Typography>
+        </Box>
+        <Button 
+          variant="outlined" 
+          startIcon={<GetApp />} 
+          onClick={handleExport}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Export CSV
         </Button>
       </Box>
@@ -89,6 +117,7 @@ function AuditLogs() {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         sx={{ mb: 3 }}
+        size={isSmallScreen ? 'small' : 'medium'}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -113,27 +142,27 @@ function AuditLogs() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Timestamp</TableCell>
-                <TableCell>User</TableCell>
-                <TableCell>Action</TableCell>
-                <TableCell>Entity Type</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>IP Address</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Timestamp</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>User</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Action</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>Entity Type</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Description</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>IP Address</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredLogs.map((log) => (
                 <TableRow key={log.id}>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
                   </TableCell>
-                  <TableCell>{log.user?.email || log.user_email || 'System'}</TableCell>
-                  <TableCell>
-                    <Chip label={log.action || 'N/A'} size="small" />
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>{log.user?.email || log.user_email || 'System'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    <Chip label={log.action || 'N/A'} size="small" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }} />
                   </TableCell>
-                  <TableCell>{log.entity_type || 'N/A'}</TableCell>
-                  <TableCell>{log.description || 'N/A'}</TableCell>
-                  <TableCell>{log.ip_address || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>{log.entity_type || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{log.description || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>{log.ip_address || 'N/A'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

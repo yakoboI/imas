@@ -28,6 +28,10 @@ const Tenant = sequelize.define('Tenant', {
     type: DataTypes.INTEGER,
     defaultValue: 5
   },
+  max_warehouses: {
+    type: DataTypes.INTEGER,
+    defaultValue: 1
+  },
   subscription_end_date: {
     type: DataTypes.DATE,
     allowNull: true

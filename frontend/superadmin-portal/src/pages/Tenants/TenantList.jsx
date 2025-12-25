@@ -19,6 +19,8 @@ import {
   DialogContent,
   DialogActions,
   DialogContentText,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add,
@@ -32,6 +34,8 @@ import superAdminService from '../../services/superAdminService';
 import { toast } from 'react-toastify';
 
 function TenantList() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,11 +81,13 @@ function TenantList() {
 
     try {
       await superAdminService.deleteTenant(deleteDialog.tenant.id);
-      toast.success('Tenant deleted');
+      toast.success('Tenant deleted successfully');
       setDeleteDialog({ open: false, tenant: null });
       loadTenants();
     } catch (error) {
-      toast.error('Failed to delete tenant');
+      const errorMessage = error.response?.data?.error || error.response?.data?.details || error.message || 'Failed to delete tenant';
+      toast.error(errorMessage);
+      console.error('Delete tenant error:', error);
     }
   };
 
@@ -121,89 +127,119 @@ function TenantList() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Tenants</Typography>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Tenants</Typography>
         <Button
           variant="contained"
           startIcon={<Add />}
           onClick={() => navigate('/tenants/create')}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
           Create Tenant
         </Button>
       </Box>
 
       <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-        <Table>
+        <Table sx={{ minWidth: { xs: 800, sm: 'auto' } }}>
           <TableHead>
             <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Subdomain</TableCell>
-              <TableCell>Plan</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Users</TableCell>
-              <TableCell>Created</TableCell>
-              <TableCell align="right">Actions</TableCell>
+              <TableCell sx={{ width: { xs: '20%', sm: '15%' }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Name</TableCell>
+              <TableCell sx={{ width: { xs: '15%', sm: '12%' }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Subdomain</TableCell>
+              <TableCell sx={{ width: { xs: '10%', sm: '10%' }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Plan</TableCell>
+              <TableCell sx={{ width: { xs: '10%', sm: '10%' }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
+              <TableCell sx={{ width: { xs: '12%', sm: '12%' }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }} align="center">Users</TableCell>
+              <TableCell sx={{ width: { xs: '12%', sm: '12%' }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }} align="center">Warehouses</TableCell>
+              <TableCell sx={{ width: { xs: '12%', sm: '12%' }, fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>Created</TableCell>
+              <TableCell sx={{ width: { xs: '19%', sm: '17%' }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }} align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {tenants.map((tenant) => (
               <TableRow key={tenant.id}>
-                <TableCell>{tenant.name}</TableCell>
-                <TableCell>{tenant.subdomain}</TableCell>
-                <TableCell>
+                <TableCell sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  {tenant.name}
+                </TableCell>
+                <TableCell sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  {tenant.subdomain}
+                </TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   <Chip
                     label={tenant.plan_type}
                     size="small"
                     color={getPlanColor(tenant.plan_type)}
+                    sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   <Chip
                     label={tenant.status}
                     size="small"
                     color={getStatusColor(tenant.status)}
+                    sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                   />
                 </TableCell>
-                <TableCell>{tenant.max_users || 'N/A'}</TableCell>
-                <TableCell>
+                <TableCell align="center" sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  {tenant.user_count !== undefined 
+                    ? `${tenant.user_count} / ${tenant.max_users === 999999 ? '∞' : tenant.max_users}`
+                    : tenant.max_users || 'N/A'}
+                </TableCell>
+                <TableCell align="center" sx={{ whiteSpace: 'nowrap', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  {tenant.warehouse_count !== undefined
+                    ? `${tenant.warehouse_count} / ${tenant.max_warehouses === 999999 ? '∞' : tenant.max_warehouses}`
+                    : tenant.max_warehouses === 999999 ? '∞' : tenant.max_warehouses || 'N/A'}
+                </TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   {new Date(tenant.created_at).toLocaleDateString()}
                 </TableCell>
-                <TableCell align="right">
+                <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                   <IconButton
                     size="small"
                     onClick={() => navigate(`/tenants/${tenant.id}`)}
+                    sx={{ padding: { xs: '4px', sm: '8px' } }}
                   >
-                    <Visibility />
+                    <Visibility fontSize="small" />
                   </IconButton>
                   <IconButton
                     size="small"
                     onClick={() => navigate(`/tenants/${tenant.id}/edit`)}
+                    sx={{ padding: { xs: '4px', sm: '8px' } }}
                   >
-                    <Edit />
+                    <Edit fontSize="small" />
                   </IconButton>
                   {tenant.status === 'active' ? (
                     <IconButton
                       size="small"
                       color="warning"
                       onClick={() => handleSuspend(tenant.id)}
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
-                      <Block />
+                      <Block fontSize="small" />
                     </IconButton>
                   ) : (
                     <IconButton
                       size="small"
                       color="success"
                       onClick={() => handleActivate(tenant.id)}
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
-                      <CheckCircle />
+                      <CheckCircle fontSize="small" />
                     </IconButton>
                   )}
                   <IconButton
                     size="small"
                     color="error"
                     onClick={() => setDeleteDialog({ open: true, tenant })}
+                    sx={{ padding: { xs: '4px', sm: '8px' } }}
                   >
-                    <Delete />
+                    <Delete fontSize="small" />
                   </IconButton>
                 </TableCell>
               </TableRow>

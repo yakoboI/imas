@@ -45,17 +45,17 @@ function Register() {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
+    <Container component="main" maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
       <Box
         sx={{
-          marginTop: 4,
+          marginTop: { xs: 2, sm: 4 },
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
         }}
       >
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          <Typography component="h1" variant="h4" align="center" gutterBottom>
+        <Paper elevation={3} sx={{ p: { xs: 3, sm: 4 }, width: '100%' }}>
+          <Typography component="h1" variant="h4" align="center" gutterBottom sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
             Create Account
           </Typography>
 

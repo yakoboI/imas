@@ -144,21 +144,19 @@ class ReportController {
       const tenantId = req.tenantId;
 
       // Total stock value
-      const stockValue = await Inventory.findAll({
-        include: [
-          {
-            model: Product,
-            as: 'product',
-            where: { tenant_id: tenantId, status: 'active' },
-            attributes: ['id', 'name', 'sku', 'cost_price', 'selling_price']
-          }
-        ],
-        where: { tenant_id: tenantId },
-        attributes: [
-          [fn('SUM', literal('quantity * "product"."cost_price"')), 'total_value']
-        ],
-        raw: true
-      });
+      const stockValueRaw = await sequelize.query(
+        `SELECT 
+          SUM(i.quantity * p.cost) as total_value
+        FROM inventory i
+        INNER JOIN products p ON i.product_id = p.id
+        WHERE i.tenant_id = :tenantId 
+          AND p.tenant_id = :tenantId
+          AND p.status = 'active'`,
+        {
+          replacements: { tenantId },
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
 
       // Low stock items
       const lowStockRaw = await sequelize.query(
@@ -169,8 +167,8 @@ class ReportController {
           i.reorder_level,
           p.name as product_name,
           p.sku,
-          p.cost_price,
-          p.selling_price
+          p.cost,
+          p.price
         FROM inventory i
         INNER JOIN products p ON i.product_id = p.id
         WHERE i.tenant_id = :tenantId 
@@ -191,7 +189,7 @@ class ReportController {
           c.id as category_id,
           c.name as category_name,
           SUM(i.quantity) as total_quantity,
-          SUM(i.quantity * p.cost_price) as total_value
+          SUM(i.quantity * p.cost) as total_value
         FROM inventory i
         INNER JOIN products p ON i.product_id = p.id
         LEFT JOIN categories c ON p.category_id = c.id
@@ -226,15 +224,15 @@ class ReportController {
       );
 
       res.json({
-        totalStockValue: parseFloat(stockValue[0]?.total_value || 0),
+        totalStockValue: parseFloat(stockValueRaw[0]?.total_value || 0),
         lowStockItems: lowStockRaw.map(item => ({
           productId: item.product_id,
           productName: item.product_name || 'Unknown',
           sku: item.sku || 'N/A',
           quantity: parseInt(item.quantity || 0),
           reorderLevel: parseInt(item.reorder_level || 0),
-          costPrice: parseFloat(item.cost_price || 0),
-          sellingPrice: parseFloat(item.selling_price || 0)
+          costPrice: parseFloat(item.cost || 0),
+          sellingPrice: parseFloat(item.price || 0)
         })),
         stockByCategory: stockByCategoryRaw.map(item => ({
           categoryId: item.category_id,
@@ -454,15 +452,15 @@ class ReportController {
           c.name as category_name,
           SUM(ri.quantity) as total_quantity,
           SUM(ri.subtotal) as total_revenue,
-          p.selling_price,
-          p.cost_price
+          p.price,
+          p.cost
         FROM receipt_items ri
         INNER JOIN receipts r ON ri.receipt_id = r.id
         LEFT JOIN products p ON ri.product_id = p.id
         LEFT JOIN categories c ON p.category_id = c.id
         WHERE r.tenant_id = :tenantId 
           AND r.status = 'active'${dateFilterProducts}
-        GROUP BY ri.product_id, p.name, p.sku, c.name, p.selling_price, p.cost_price
+        GROUP BY ri.product_id, p.name, p.sku, c.name, p.price, p.cost
         ORDER BY total_quantity DESC
         LIMIT 20`,
         {
@@ -520,8 +518,8 @@ class ReportController {
           category: p.category_name || 'Uncategorized',
           totalQuantity: parseInt(p.total_quantity || 0),
           totalRevenue: parseFloat(p.total_revenue || 0),
-          sellingPrice: parseFloat(p.selling_price || 0),
-          costPrice: parseFloat(p.cost_price || 0)
+          sellingPrice: parseFloat(p.price || 0),
+          costPrice: parseFloat(p.cost || 0)
         })),
         productsByCategory: productsByCategoryRaw.map(p => ({
           categoryId: p.category_id,
@@ -589,24 +587,22 @@ class ReportController {
   }
 
   static async getInventoryReportData(tenantId) {
-    const stockValue = await Inventory.findAll({
-      include: [
-        {
-          model: Product,
-          as: 'product',
-          where: { tenant_id: tenantId, status: 'active' },
-          attributes: []
-        }
-      ],
-      where: { tenant_id: tenantId },
-      attributes: [
-        [fn('SUM', literal('quantity * "product"."cost_price"')), 'total_value']
-      ],
-      raw: true
-    });
+    const stockValueRaw = await sequelize.query(
+      `SELECT 
+        SUM(i.quantity * p.cost) as total_value
+      FROM inventory i
+      INNER JOIN products p ON i.product_id = p.id
+      WHERE i.tenant_id = :tenantId 
+        AND p.tenant_id = :tenantId
+        AND p.status = 'active'`,
+      {
+        replacements: { tenantId },
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
 
     return {
-      totalStockValue: parseFloat(stockValue[0]?.total_value || 0)
+      totalStockValue: parseFloat(stockValueRaw[0]?.total_value || 0)
     };
   }
 

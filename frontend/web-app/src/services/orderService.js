@@ -30,6 +30,13 @@ const orderService = {
     const response = await api.put(`/orders/${id}/complete`);
     return response.data;
   },
+
+  getOrdersByProduct: async (productId) => {
+    const response = await api.get(`/orders/product/${productId}`, {
+      params: { limit: 5 } // Get last 5 orders
+    });
+    return response.data;
+  },
 };
 
 export default orderService;

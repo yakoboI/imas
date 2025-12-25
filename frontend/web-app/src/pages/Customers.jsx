@@ -20,6 +20,8 @@ import {
   DialogActions,
   DialogContentText,
   Grid,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add,
@@ -27,11 +29,14 @@ import {
   Delete,
   Search,
   People as PeopleIcon,
+  Close,
 } from '@mui/icons-material';
 import customerService from '../services/customerService';
 import { toast } from 'react-toastify';
 
 function Customers() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -135,9 +140,29 @@ function Customers() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Customers</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleAdd}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Customers
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Manage your customer database and contact information
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          startIcon={<Add />} 
+          onClick={handleAdd}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Add Customer
         </Button>
       </Box>
@@ -172,38 +197,40 @@ function Customers() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Address</TableCell>
-                <TableCell>Total Orders</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Name</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>Email</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Phone</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>Address</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>Total Orders</TableCell>
+                <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredCustomers.map((customer) => (
                 <TableRow key={customer.id}>
-                  <TableCell>{customer.name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'N/A'}</TableCell>
-                  <TableCell>{customer.email || 'N/A'}</TableCell>
-                  <TableCell>{customer.phone || 'N/A'}</TableCell>
-                  <TableCell>{customer.address || 'N/A'}</TableCell>
-                  <TableCell>{customer.total_orders || 0}</TableCell>
-                  <TableCell align="right">
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{customer.name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>{customer.email || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{customer.phone || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>{customer.address || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>{customer.total_orders || 0}</TableCell>
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                     <IconButton 
                       size="small" 
                       color="primary"
                       onClick={() => handleEdit(customer)}
                       title="Edit Customer"
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
-                      <Edit />
+                      <Edit fontSize="small" />
                     </IconButton>
                     <IconButton
                       size="small"
                       color="error"
                       onClick={() => setDeleteDialog({ open: true, customer })}
                       title="Delete Customer"
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
-                      <Delete />
+                      <Delete fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -220,7 +247,22 @@ function Customers() {
         fullWidth
       >
         <form onSubmit={handleAddSubmit}>
-          <DialogTitle>Add Customer</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Add Customer</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setAddDialog(false)}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -266,8 +308,19 @@ function Customers() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAddDialog(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">Add Customer</Button>
+            <Button 
+              onClick={() => setAddDialog(false)}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Add Customer
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -282,7 +335,25 @@ function Customers() {
         fullWidth
       >
         <form onSubmit={handleEditSubmit}>
-          <DialogTitle>Edit Customer</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Edit Customer</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => {
+                    setEditDialog({ open: false, customer: null });
+                    setFormData({ name: '', email: '', phone: '', address: '' });
+                  }}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -328,13 +399,22 @@ function Customers() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => {
-              setEditDialog({ open: false, customer: null });
-              setFormData({ name: '', email: '', phone: '', address: '' });
-            }}>
+            <Button 
+              onClick={() => {
+                setEditDialog({ open: false, customer: null });
+                setFormData({ name: '', email: '', phone: '', address: '' });
+              }}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="contained">Update Customer</Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Update Customer
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -343,17 +423,40 @@ function Customers() {
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, customer: null })}
       >
-        <DialogTitle>Delete Customer</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Delete Customer</span>
+            {isSmallScreen && (
+              <IconButton
+                edge="end"
+                color="inherit"
+                onClick={() => setDeleteDialog({ open: false, customer: null })}
+                aria-label="close"
+                size="small"
+              >
+                <Close />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete this customer? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, customer: null })}>
+          <Button 
+            onClick={() => setDeleteDialog({ open: false, customer: null })}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Cancel
           </Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
+          <Button 
+            onClick={handleDelete} 
+            color="error" 
+            variant="contained"
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Delete
           </Button>
         </DialogActions>

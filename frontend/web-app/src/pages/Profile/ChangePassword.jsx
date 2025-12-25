@@ -9,11 +9,16 @@ import {
   Button,
   Box,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { changePassword } from '../../store/slices/userSlice';
 import { toast } from 'react-toastify';
+import { ArrowBack } from '@mui/icons-material';
 
 function ChangePassword() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -57,11 +62,30 @@ function ChangePassword() {
 
   return (
     <Container maxWidth="sm">
-      <Typography variant="h4" gutterBottom>
-        Change Password
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2,
+          mb: 1
+        }}>
+          <Button 
+            startIcon={<ArrowBack />} 
+            onClick={() => navigate('/profile')}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
+            Back
+          </Button>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Change Password
+          </Typography>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ ml: { xs: 0, sm: 7 } }}>
+          Update your account password for enhanced security
+        </Typography>
+      </Box>
 
-      <Paper sx={{ p: 3 }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 } }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -106,11 +130,27 @@ function ChangePassword() {
                 : ''
             }
           />
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3 }}>
-            <Button variant="outlined" onClick={() => navigate('/profile')}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2, 
+            justifyContent: 'flex-end', 
+            mt: 3 
+          }}>
+            <Button 
+              variant="outlined" 
+              onClick={() => navigate('/profile')}
+              fullWidth={isSmallScreen}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="contained">
+            <Button 
+              type="submit" 
+              variant="contained"
+              fullWidth={isSmallScreen}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
               Change Password
             </Button>
           </Box>

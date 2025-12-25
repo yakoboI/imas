@@ -20,6 +20,8 @@ import {
   DialogActions,
   DialogContentText,
   Grid,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add,
@@ -27,11 +29,14 @@ import {
   Delete,
   Search,
   LocalShipping as SupplierIcon,
+  Close,
 } from '@mui/icons-material';
 import supplierService from '../services/supplierService';
 import { toast } from 'react-toastify';
 
 function Suppliers() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -137,9 +142,29 @@ function Suppliers() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Suppliers</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleAdd}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Suppliers
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Manage supplier contacts and vendor information
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          startIcon={<Add />} 
+          onClick={handleAdd}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Add Supplier
         </Button>
       </Box>
@@ -174,37 +199,39 @@ function Suppliers() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Contact Person</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Phone</TableCell>
-                <TableCell>Address</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Name</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>Contact Person</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>Email</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Phone</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>Address</TableCell>
+                <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredSuppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
-                  <TableCell>{supplier.name || 'N/A'}</TableCell>
-                  <TableCell>{supplier.contact_person || 'N/A'}</TableCell>
-                  <TableCell>{supplier.email || 'N/A'}</TableCell>
-                  <TableCell>{supplier.phone || 'N/A'}</TableCell>
-                  <TableCell>{supplier.address || 'N/A'}</TableCell>
-                  <TableCell align="right">
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{supplier.name || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>{supplier.contact_person || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>{supplier.email || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{supplier.phone || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>{supplier.address || 'N/A'}</TableCell>
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                     <IconButton
                       size="small"
                       color="primary"
                       onClick={() => handleEdit(supplier)}
                       title="Edit Supplier"
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
-                      <Edit />
+                      <Edit fontSize="small" />
                     </IconButton>
                     <IconButton
                       size="small"
                       color="error"
                       onClick={() => setDeleteDialog({ open: true, supplier })}
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
-                      <Delete />
+                      <Delete fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -221,7 +248,22 @@ function Suppliers() {
         fullWidth
       >
         <form onSubmit={handleAddSubmit}>
-          <DialogTitle>Add Supplier</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Add Supplier</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setAddDialog(false)}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -276,8 +318,19 @@ function Suppliers() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAddDialog(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">Add Supplier</Button>
+            <Button 
+              onClick={() => setAddDialog(false)}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Add Supplier
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -292,7 +345,25 @@ function Suppliers() {
         fullWidth
       >
         <form onSubmit={handleEditSubmit}>
-          <DialogTitle>Edit Supplier</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Edit Supplier</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => {
+                    setEditDialog({ open: false, supplier: null });
+                    setFormData({ name: '', contact_person: '', email: '', phone: '', address: '' });
+                  }}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -352,10 +423,17 @@ function Suppliers() {
                 setEditDialog({ open: false, supplier: null });
                 setFormData({ name: '', contact_person: '', email: '', phone: '', address: '' });
               }}
+              size={isSmallScreen ? 'small' : 'medium'}
             >
               Cancel
             </Button>
-            <Button type="submit" variant="contained">Update Supplier</Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Update Supplier
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -364,17 +442,40 @@ function Suppliers() {
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, supplier: null })}
       >
-        <DialogTitle>Delete Supplier</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Delete Supplier</span>
+            {isSmallScreen && (
+              <IconButton
+                edge="end"
+                color="inherit"
+                onClick={() => setDeleteDialog({ open: false, supplier: null })}
+                aria-label="close"
+                size="small"
+              >
+                <Close />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete "{deleteDialog.supplier?.name}"? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, supplier: null })}>
+          <Button 
+            onClick={() => setDeleteDialog({ open: false, supplier: null })}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Cancel
           </Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
+          <Button 
+            onClick={handleDelete} 
+            color="error" 
+            variant="contained"
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Delete
           </Button>
         </DialogActions>

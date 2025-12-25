@@ -25,6 +25,8 @@ import {
   InputLabel,
   Select,
   Divider,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add,
@@ -32,6 +34,7 @@ import {
   Search,
   ShoppingCart as OrderIcon,
   Delete as DeleteIcon,
+  Close,
 } from '@mui/icons-material';
 import orderService from '../services/orderService';
 import productService from '../services/productService';
@@ -41,6 +44,8 @@ import { toast } from 'react-toastify';
 import { formatCurrency } from '../utils/currency';
 
 function Orders() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -235,9 +240,29 @@ function Orders() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Orders</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleCreateOrder}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Orders
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Manage customer orders and track order status
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          startIcon={<Add />} 
+          onClick={handleCreateOrder}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Create Order
         </Button>
       </Box>
@@ -272,39 +297,63 @@ function Orders() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Order Number</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Items</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Order Number</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Customer</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>Date</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>Items</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Total</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
+                <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredOrders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell>{order.order_number || `#${order.id}`}</TableCell>
-                  <TableCell>
-                    {order.customer?.name || order.customer_name || order.customer_email || 'N/A'}
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{order.order_number || `#${order.id}`}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    {order.customer?.name || order.customer_name || order.customer_email || 'Walk-in Customer'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>
                     {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}
                   </TableCell>
-                  <TableCell>{order.items?.length || order.item_count || 0}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>
+                    {order.items && order.items.length > 0 ? (
+                      <Box>
+                        {order.items.slice(0, 1).map((item, idx) => (
+                          <Typography key={idx} variant="caption" display="block">
+                            {item.product?.name || 'Product'}
+                            {item.product?.sku ? ` (SKU: ${item.product.sku})` : ' (SKU: N/A)'}
+                          </Typography>
+                        ))}
+                        {order.items.length > 1 && (
+                          <Typography variant="caption" color="text.secondary">
+                            +{order.items.length - 1} more
+                          </Typography>
+                        )}
+                      </Box>
+                    ) : (
+                      order.item_count || 0
+                    )}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     {formatCurrency(order.total_amount || 0, currency)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     <Chip
                       label={order.status || 'pending'}
                       size="small"
                       color={getStatusColor(order.status)}
+                      sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                     />
                   </TableCell>
-                  <TableCell align="right">
-                    <IconButton size="small" color="primary" onClick={() => handleViewOrder(order)}>
-                      <Visibility />
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <IconButton 
+                      size="small" 
+                      color="primary" 
+                      onClick={() => handleViewOrder(order)}
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
+                    >
+                      <Visibility fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -321,7 +370,22 @@ function Orders() {
         fullWidth
       >
         <form onSubmit={handleCreateSubmit}>
-          <DialogTitle>Create New Order</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Create New Order</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setCreateDialog(false)}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -458,8 +522,19 @@ function Orders() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setCreateDialog(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">Create Order</Button>
+            <Button 
+              onClick={() => setCreateDialog(false)}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Create Order
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -472,7 +547,20 @@ function Orders() {
         fullWidth
       >
         <DialogTitle>
-          Order Details - {viewOrderDetails?.order_number || viewDialog.order?.order_number}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Order Details - {viewOrderDetails?.order_number || viewDialog.order?.order_number}</span>
+            {isSmallScreen && (
+              <IconButton
+                edge="end"
+                color="inherit"
+                onClick={() => setViewDialog({ open: false, order: null })}
+                aria-label="close"
+                size="small"
+              >
+                <Close />
+              </IconButton>
+            )}
+          </Box>
         </DialogTitle>
         <DialogContent>
           {loadingOrder ? (
@@ -501,19 +589,22 @@ function Orders() {
                     : 'N/A'}
                 </Typography>
               </Grid>
-              {viewOrderDetails.customer && (
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">Customer</Typography>
-                  <Typography variant="body1">
-                    {viewOrderDetails.customer.name || 'N/A'}
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">Customer</Typography>
+                <Typography variant="body1">
+                  {viewOrderDetails.customer?.name || 'Walk-in Customer'}
+                </Typography>
+                {viewOrderDetails.customer?.email && (
+                  <Typography variant="body2" color="text.secondary">
+                    {viewOrderDetails.customer.email}
                   </Typography>
-                  {viewOrderDetails.customer.email && (
-                    <Typography variant="body2" color="text.secondary">
-                      {viewOrderDetails.customer.email}
-                    </Typography>
-                  )}
-                </Grid>
-              )}
+                )}
+                {viewOrderDetails.customer?.phone && (
+                  <Typography variant="body2" color="text.secondary">
+                    {viewOrderDetails.customer.phone}
+                  </Typography>
+                )}
+              </Grid>
               <Grid item xs={12}>
                 <Divider sx={{ my: 1 }} />
                 <Typography variant="h6" gutterBottom>Order Items</Typography>
@@ -533,7 +624,7 @@ function Orders() {
                           <TableRow key={item.id}>
                             <TableCell>
                               {item.product?.name || 'N/A'} 
-                              {item.product?.sku && ` (${item.product.sku})`}
+                              {item.product?.sku ? ` (SKU: ${item.product.sku})` : ' (SKU: N/A)'}
                             </TableCell>
                             <TableCell align="right">{item.quantity}</TableCell>
                             <TableCell align="right">
@@ -591,7 +682,12 @@ function Orders() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setViewDialog({ open: false, order: null })}>Close</Button>
+          <Button 
+            onClick={() => setViewDialog({ open: false, order: null })}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

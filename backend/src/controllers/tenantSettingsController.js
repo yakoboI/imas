@@ -31,7 +31,20 @@ class TenantSettingsController {
       // Merge tenant settings with defaults
       const settings = { ...defaultTenantSettings, ...(tenant.settings || {}) };
 
-      res.json({ settings });
+      // Include company information
+      const response = {
+        settings,
+        company: {
+          name: tenant.company_name || '',
+          email: tenant.company_email || '',
+          phone: tenant.company_phone || '',
+          address: tenant.company_address || '',
+          logo: tenant.company_logo_url || '',
+          taxId: tenant.tax_id || ''
+        }
+      };
+
+      res.json(response);
     } catch (error) {
       console.error('[TenantSettingsController] Error in getSettings:', error);
       next(error);
@@ -63,13 +76,53 @@ class TenantSettingsController {
         updates.lowStockThreshold = threshold;
       }
 
-      // Merge with existing settings
-      const currentSettings = tenant.settings || {};
-      const newSettings = { ...defaultTenantSettings, ...currentSettings, ...updates };
+      // Store old values for audit trail
+      const oldSettings = tenant.settings || {};
+      const oldCompany = {
+        name: tenant.company_name,
+        email: tenant.company_email,
+        phone: tenant.company_phone,
+        address: tenant.company_address,
+        logo: tenant.company_logo_url,
+        taxId: tenant.tax_id
+      };
 
-      // Update tenant settings
-      tenant.settings = newSettings;
-      await tenant.save();
+      // Separate company information from settings
+      const companyUpdates = {};
+      const settingsUpdates = {};
+      
+      // Company information fields (direct tenant columns)
+      if (updates.companyName !== undefined) companyUpdates.company_name = updates.companyName;
+      if (updates.companyEmail !== undefined) companyUpdates.company_email = updates.companyEmail;
+      if (updates.companyPhone !== undefined) companyUpdates.company_phone = updates.companyPhone;
+      if (updates.companyAddress !== undefined) companyUpdates.company_address = updates.companyAddress;
+      if (updates.companyLogo !== undefined) companyUpdates.company_logo_url = updates.companyLogo;
+      if (updates.taxId !== undefined) companyUpdates.tax_id = updates.taxId;
+
+      // Settings fields (JSONB)
+      const settingsFields = ['currency', 'timezone', 'dateFormat', 'lowStockThreshold', 'emailNotifications', 'lowStockAlerts', 'orderNotifications'];
+      settingsFields.forEach(field => {
+        if (updates[field] !== undefined) {
+          settingsUpdates[field] = updates[field];
+        }
+      });
+
+      // Update company information if provided
+      if (Object.keys(companyUpdates).length > 0) {
+        await tenant.update(companyUpdates);
+      }
+
+      // Update settings if provided
+      let finalSettings = oldSettings;
+      if (Object.keys(settingsUpdates).length > 0) {
+        const currentSettings = tenant.settings || {};
+        finalSettings = { ...defaultTenantSettings, ...currentSettings, ...settingsUpdates };
+        tenant.settings = finalSettings;
+        await tenant.save();
+      }
+
+      // Reload tenant to get updated values
+      await tenant.reload();
 
       // Log audit trail
       await AuditService.logAction({
@@ -78,8 +131,21 @@ class TenantSettingsController {
         action: 'UPDATE_TENANT_SETTINGS',
         entity_type: 'Tenant',
         entity_id: tenantId,
-        old_values: { settings: currentSettings },
-        new_values: { settings: newSettings },
+        old_values: { 
+          settings: oldSettings,
+          company: oldCompany
+        },
+        new_values: { 
+          settings: tenant.settings || {},
+          company: {
+            name: tenant.company_name,
+            email: tenant.company_email,
+            phone: tenant.company_phone,
+            address: tenant.company_address,
+            logo: tenant.company_logo_url,
+            taxId: tenant.tax_id
+          }
+        },
         ip_address: req.ip,
         user_agent: req.headers['user-agent'],
         description: `Tenant settings updated by ${req.user.email}`
@@ -87,7 +153,15 @@ class TenantSettingsController {
 
       res.json({
         message: 'Settings updated successfully',
-        settings: newSettings
+        settings: { ...defaultTenantSettings, ...(tenant.settings || {}) },
+        company: {
+          name: tenant.company_name || '',
+          email: tenant.company_email || '',
+          phone: tenant.company_phone || '',
+          address: tenant.company_address || '',
+          logo: tenant.company_logo_url || '',
+          taxId: tenant.tax_id || ''
+        }
       });
     } catch (error) {
       console.error('[TenantSettingsController] Error in updateSettings:', error);

@@ -35,7 +35,6 @@ export const updateProfile = createAsyncThunk(
                           error.message || 
                           'Failed to update profile';
       
-      // Log detailed error for debugging
       if (error.response?.data) {
         console.error('Profile update error:', error.response.data);
       }

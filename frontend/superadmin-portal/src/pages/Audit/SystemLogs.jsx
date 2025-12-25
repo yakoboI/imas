@@ -19,12 +19,16 @@ import {
   TextField,
   MenuItem,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Archive } from '@mui/icons-material';
 import superAdminService from '../../services/superAdminService';
 import { toast } from 'react-toastify';
 
 function SystemLogs() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
@@ -49,20 +53,50 @@ function SystemLogs() {
   };
 
   const handleArchive = async () => {
+    // Validate input before starting
+    if (archiveType === 'beforeDate' && !beforeDate) {
+      toast.error('Please select a date');
+      return;
+    }
+    
+    if (archiveType === 'daysOld' && (!daysOld || daysOld < 1)) {
+      toast.error('Please enter a valid number of days (must be at least 1)');
+      return;
+    }
+
     setArchiving(true);
     try {
       let archiveData;
       if (archiveType === 'daysOld') {
-        archiveData = { daysOld };
+        archiveData = { daysOld: parseInt(daysOld) };
       } else {
         // Convert datetime-local format to ISO string
-        const date = new Date(beforeDate);
-        archiveData = { beforeDate: date.toISOString() };
+        // datetime-local format: "YYYY-MM-DDTHH:mm" (local time, no timezone)
+        // We need to treat it as local time and convert to ISO
+        // Create date from datetime-local string (treats as local time)
+        const localDate = new Date(beforeDate);
+        
+        // Validate the date
+        if (isNaN(localDate.getTime())) {
+          toast.error('Invalid date format');
+          setArchiving(false);
+          return;
+        }
+        
+        // Convert to ISO string for the API
+        archiveData = { beforeDate: localDate.toISOString() };
       }
 
       const result = await superAdminService.archiveSystemLogs(archiveData);
       
-      toast.success(`Successfully archived ${result.archivedCount} logs`);
+      // Handle response - may have archivedCount or message
+      const archivedCount = result.archivedCount || 0;
+      if (archivedCount > 0) {
+        toast.success(`Successfully archived ${archivedCount} log${archivedCount !== 1 ? 's' : ''}`);
+      } else {
+        toast.info(result.message || 'No logs found to archive');
+      }
+      
       setArchiveDialogOpen(false);
       setDaysOld(90);
       setBeforeDate('');
@@ -71,8 +105,9 @@ function SystemLogs() {
       // Reload logs after archiving
       await loadLogs();
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Failed to archive system logs';
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to archive system logs';
       toast.error(errorMessage);
+      console.error('Archive error:', error);
     } finally {
       setArchiving(false);
     }
@@ -88,9 +123,16 @@ function SystemLogs() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 2,
+        gap: { xs: 2, sm: 0 }
+      }}>
         <Box>
-          <Typography variant="h4" gutterBottom>
+          <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             System Logs
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -102,6 +144,8 @@ function SystemLogs() {
           color="secondary"
           startIcon={<Archive />}
           onClick={() => setArchiveDialogOpen(true)}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
           Archive Logs
         </Button>
@@ -132,9 +176,15 @@ function SystemLogs() {
               label="Days Old"
               type="number"
               value={daysOld}
-              onChange={(e) => setDaysOld(parseInt(e.target.value) || 90)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || (!isNaN(value) && parseInt(value) >= 1)) {
+                  setDaysOld(value === '' ? '' : parseInt(value));
+                }
+              }}
               helperText="Logs older than this many days will be archived"
               inputProps={{ min: 1 }}
+              error={daysOld < 1}
             />
           ) : (
             <TextField
@@ -143,13 +193,18 @@ function SystemLogs() {
               type="datetime-local"
               value={beforeDate}
               onChange={(e) => setBeforeDate(e.target.value)}
-              helperText="Logs before this date will be archived"
+              helperText="Logs before this date and time will be archived"
               InputLabelProps={{ shrink: true }}
+              required
             />
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setArchiveDialogOpen(false)} disabled={archiving}>
+          <Button 
+            onClick={() => setArchiveDialogOpen(false)} 
+            disabled={archiving}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Cancel
           </Button>
           <Button 
@@ -157,6 +212,7 @@ function SystemLogs() {
             variant="contained" 
             color="secondary"
             disabled={archiving || (archiveType === 'daysOld' && daysOld < 1) || (archiveType === 'beforeDate' && !beforeDate)}
+            size={isSmallScreen ? 'small' : 'medium'}
           >
             {archiving ? 'Archiving...' : 'Archive'}
           </Button>
@@ -164,30 +220,40 @@ function SystemLogs() {
       </Dialog>
 
       <TableContainer component={Paper} sx={{ mt: 3, overflowX: 'auto', maxWidth: '100%' }}>
-        <Table>
+        <Table sx={{ minWidth: { xs: 700, sm: 'auto' } }}>
           <TableHead>
             <TableRow>
-              <TableCell>Timestamp</TableCell>
-              <TableCell>SuperAdmin</TableCell>
-              <TableCell>Action</TableCell>
-              <TableCell>Target Tenant</TableCell>
-              <TableCell>Description</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Timestamp</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>SuperAdmin</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Action</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>Target Tenant</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Description</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {logs.map((log) => (
-              <TableRow key={log.id}>
-                <TableCell>
-                  {new Date(log.timestamp).toLocaleString()}
+            {logs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No system logs found
+                  </Typography>
                 </TableCell>
-                <TableCell>{log.superadmin?.email || 'N/A'}</TableCell>
-                <TableCell>
-                  <Chip label={log.action} size="small" color="primary" />
-                </TableCell>
-                <TableCell>{log.targetTenant?.name || 'N/A'}</TableCell>
-                <TableCell>{log.description || 'N/A'}</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              logs.map((log) => (
+                <TableRow key={log.id}>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    {new Date(log.timestamp).toLocaleString()}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>{log.superadmin?.email || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    <Chip label={log.action} size="small" color="primary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }} />
+                  </TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>{log.targetTenant?.name || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{log.description || 'N/A'}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>

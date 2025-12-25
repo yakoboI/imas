@@ -60,8 +60,8 @@ function Layout() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          mt: 8, // Margin-top to account for fixed AppBar (64px = 8 * 8px)
+          p: { xs: 2, sm: 3 },
+          mt: { xs: 7, sm: 8 }, // Margin-top to account for fixed AppBar
           backgroundColor: 'background.default',
           minHeight: 'calc(100vh - 64px)', // Full height minus AppBar
           minWidth: 0, // Fix flexbox min-width issue - allows flex items to shrink below content size

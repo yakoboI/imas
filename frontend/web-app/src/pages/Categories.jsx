@@ -20,6 +20,8 @@ import {
   DialogActions,
   DialogContentText,
   Grid,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add,
@@ -27,11 +29,14 @@ import {
   Delete,
   Search,
   Category as CategoryIcon,
+  Close,
 } from '@mui/icons-material';
 import categoryService from '../services/categoryService';
 import { toast } from 'react-toastify';
 
 function Categories() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,9 +150,29 @@ function Categories() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Categories</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleAdd}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Categories
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Organize your products with categories and subcategories
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          startIcon={<Add />} 
+          onClick={handleAdd}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Add Category
         </Button>
       </Box>
@@ -182,28 +207,34 @@ function Categories() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Parent Category</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Name</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>Description</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>Parent Category</TableCell>
+                <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredCategories.map((category) => (
                 <TableRow key={category.id}>
-                  <TableCell>{category.name || 'N/A'}</TableCell>
-                  <TableCell>{category.description || 'N/A'}</TableCell>
-                  <TableCell>{category.parent?.name || 'N/A'}</TableCell>
-                  <TableCell align="right">
-                    <IconButton size="small" color="primary" onClick={() => handleEdit(category)}>
-                      <Edit />
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{category.name || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>{category.description || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>{category.parent?.name || 'N/A'}</TableCell>
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <IconButton 
+                      size="small" 
+                      color="primary" 
+                      onClick={() => handleEdit(category)}
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
+                    >
+                      <Edit fontSize="small" />
                     </IconButton>
                     <IconButton
                       size="small"
                       color="error"
                       onClick={() => setDeleteDialog({ open: true, category })}
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
-                      <Delete />
+                      <Delete fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -216,7 +247,22 @@ function Categories() {
       {/* Add Category Dialog */}
       <Dialog open={addDialog} onClose={() => setAddDialog(false)} maxWidth="sm" fullWidth>
         <form onSubmit={handleAddSubmit}>
-          <DialogTitle>Add Category</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Add Category</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setAddDialog(false)}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -263,8 +309,19 @@ function Categories() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAddDialog(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">Add Category</Button>
+            <Button 
+              onClick={() => setAddDialog(false)}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Add Category
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -272,7 +329,22 @@ function Categories() {
       {/* Edit Category Dialog */}
       <Dialog open={editDialog.open} onClose={() => setEditDialog({ open: false, category: null })} maxWidth="sm" fullWidth>
         <form onSubmit={handleEditSubmit}>
-          <DialogTitle>Edit Category</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Edit Category</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setEditDialog({ open: false, category: null })}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -321,8 +393,19 @@ function Categories() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setEditDialog({ open: false, category: null })}>Cancel</Button>
-            <Button type="submit" variant="contained">Update Category</Button>
+            <Button 
+              onClick={() => setEditDialog({ open: false, category: null })}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Update Category
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -332,7 +415,22 @@ function Categories() {
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, category: null })}
       >
-        <DialogTitle>Delete Category</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Delete Category</span>
+            {isSmallScreen && (
+              <IconButton
+                edge="end"
+                color="inherit"
+                onClick={() => setDeleteDialog({ open: false, category: null })}
+                aria-label="close"
+                size="small"
+              >
+                <Close />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete "{deleteDialog.category?.name}"? This action cannot be undone.
@@ -344,8 +442,18 @@ function Categories() {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, category: null })}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
+          <Button 
+            onClick={() => setDeleteDialog({ open: false, category: null })}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDelete} 
+            color="error" 
+            variant="contained"
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Delete
           </Button>
         </DialogActions>

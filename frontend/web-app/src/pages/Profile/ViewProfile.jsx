@@ -12,6 +12,8 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Edit,
@@ -22,12 +24,15 @@ import {
   Phone,
   Email,
   CalendarToday,
+  ArrowBack,
 } from '@mui/icons-material';
 import { fetchProfile } from '../../store/slices/userSlice';
 import ProfileCard from '../../components/profile/ProfileCard';
 import { toast } from 'react-toastify';
 
 function ViewProfile() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { profile, loading, error } = useSelector((state) => state.user);
@@ -43,8 +48,6 @@ function ViewProfile() {
         // Handle 429 (Too Many Requests) with user-friendly message
         if (err?.response?.status === 429) {
           toast.error('Too many requests. Please wait a moment and try again.');
-        } else if (err?.response?.status !== 404) {
-          console.error('Failed to fetch profile:', err);
         }
       });
     }
@@ -88,107 +91,274 @@ function ViewProfile() {
 
   return (
     <Box>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4">My Profile</Typography>
+      <Box sx={{ 
+        mb: { xs: 2, sm: 3 }, 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' },
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2rem' },
+              fontWeight: { xs: 600, sm: 400 }
+            }}
+          >
+            My Profile
+          </Typography>
+          <Typography 
+            variant="body2" 
+            color="text.secondary" 
+            gutterBottom
+            sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+          >
+            View and manage your personal information
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<Edit />}
           onClick={() => navigate('/profile/edit')}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
           Edit Profile
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
+      <Grid container spacing={{ xs: 2, sm: 3 }}>
+        <Grid item xs={12} sm={12} md={4}>
           <ProfileCard profile={displayProfile} />
         </Grid>
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Person /> Personal Information
+        <Grid item xs={12} sm={12} md={8}>
+          <Paper sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 3 } }}>
+            <Typography 
+              variant="h6" 
+              gutterBottom 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                fontSize: { xs: '1rem', sm: '1.25rem' }
+              }}
+            >
+              <Person sx={{ fontSize: { xs: 18, sm: 24 } }} /> Personal Information
             </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Grid container spacing={2}>
+            <Divider sx={{ my: { xs: 1.5, sm: 2 } }} />
+            <Grid container spacing={{ xs: 1.5, sm: 2 }}>
               <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">First Name</Typography>
-                <Typography variant="body1">{displayProfile?.first_name || displayProfile?.firstName || 'N/A'}</Typography>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                >
+                  First Name
+                </Typography>
+                <Typography 
+                  variant="body1"
+                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                >
+                  {displayProfile?.first_name || displayProfile?.firstName || 'N/A'}
+                </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">Last Name</Typography>
-                <Typography variant="body1">{displayProfile?.last_name || displayProfile?.lastName || 'N/A'}</Typography>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                >
+                  Last Name
+                </Typography>
+                <Typography 
+                  variant="body1"
+                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                >
+                  {displayProfile?.last_name || displayProfile?.lastName || 'N/A'}
+                </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  <Email sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                >
+                  <Email sx={{ fontSize: { xs: 14, sm: 16 }, verticalAlign: 'middle', mr: 0.5 }} />
                   Email
                 </Typography>
-                <Typography variant="body1">{displayProfile?.email || 'N/A'}</Typography>
+                <Typography 
+                  variant="body1"
+                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                >
+                  {displayProfile?.email || 'N/A'}
+                </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="text.secondary">
-                  <Phone sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                >
+                  <Phone sx={{ fontSize: { xs: 14, sm: 16 }, verticalAlign: 'middle', mr: 0.5 }} />
                   Phone
                 </Typography>
-                <Typography variant="body1">{displayProfile?.phone || 'N/A'}</Typography>
+                <Typography 
+                  variant="body1"
+                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                >
+                  {displayProfile?.phone || 'N/A'}
+                </Typography>
               </Grid>
               {displayProfile?.date_of_birth && (
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    <CalendarToday sx={{ fontSize: 16, verticalAlign: 'middle', mr: 0.5 }} />
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                  >
+                    <CalendarToday sx={{ fontSize: { xs: 14, sm: 16 }, verticalAlign: 'middle', mr: 0.5 }} />
                     Date of Birth
                   </Typography>
-                  <Typography variant="body1">
+                  <Typography 
+                    variant="body1"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  >
                     {new Date(displayProfile.date_of_birth).toLocaleDateString()}
                   </Typography>
                 </Grid>
               )}
               {displayProfile?.gender && (
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">Gender</Typography>
-                  <Typography variant="body1">{displayProfile.gender}</Typography>
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                  >
+                    Gender
+                  </Typography>
+                  <Typography 
+                    variant="body1"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  >
+                    {displayProfile.gender}
+                  </Typography>
                 </Grid>
               )}
             </Grid>
           </Paper>
 
           {displayProfile?.street_address && (
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LocationOn /> Address Information
+            <Paper sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 3 } }}>
+              <Typography 
+                variant="h6" 
+                gutterBottom 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  fontSize: { xs: '1rem', sm: '1.25rem' }
+                }}
+              >
+                <LocationOn sx={{ fontSize: { xs: 18, sm: 24 } }} /> Address Information
               </Typography>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="body1">{displayProfile.street_address}</Typography>
-              <Typography variant="body1">
+              <Divider sx={{ my: { xs: 1.5, sm: 2 } }} />
+              <Typography 
+                variant="body1"
+                sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, mb: 0.5 }}
+              >
+                {displayProfile.street_address}
+              </Typography>
+              <Typography 
+                variant="body1"
+                sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, mb: 0.5 }}
+              >
                 {displayProfile.city}, {displayProfile.state_province} {displayProfile.zip_postal_code}
               </Typography>
-              <Typography variant="body1">{displayProfile.country}</Typography>
+              <Typography 
+                variant="body1"
+                sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+              >
+                {displayProfile.country}
+              </Typography>
             </Paper>
           )}
 
           {displayProfile?.employee_id && (
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Employment Details <Chip label="Admin Only" size="small" color="primary" />
+            <Paper sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 3 } }}>
+              <Typography 
+                variant="h6" 
+                gutterBottom
+                sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+              >
+                Employment Details <Chip 
+                  label="Admin Only" 
+                  size="small" 
+                  color="primary"
+                  sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' }, height: { xs: 20, sm: 24 } }}
+                />
               </Typography>
-              <Divider sx={{ my: 2 }} />
-              <Grid container spacing={2}>
+              <Divider sx={{ my: { xs: 1.5, sm: 2 } }} />
+              <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">Employee ID</Typography>
-                  <Typography variant="body1">{displayProfile.employee_id}</Typography>
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                  >
+                    Employee ID
+                  </Typography>
+                  <Typography 
+                    variant="body1"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  >
+                    {displayProfile.employee_id}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">Department</Typography>
-                  <Typography variant="body1">{displayProfile.department || 'N/A'}</Typography>
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                  >
+                    Department
+                  </Typography>
+                  <Typography 
+                    variant="body1"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  >
+                    {displayProfile.department || 'N/A'}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">Position</Typography>
-                  <Typography variant="body1">{displayProfile.position || 'N/A'}</Typography>
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                  >
+                    Position
+                  </Typography>
+                  <Typography 
+                    variant="body1"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  >
+                    {displayProfile.position || 'N/A'}
+                  </Typography>
                 </Grid>
                 {displayProfile?.employment_date && (
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">Employment Date</Typography>
-                    <Typography variant="body1">
+                    <Typography 
+                      variant="body2" 
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mb: 0.5 }}
+                    >
+                      Employment Date
+                    </Typography>
+                    <Typography 
+                      variant="body1"
+                      sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                    >
                       {new Date(displayProfile.employment_date).toLocaleDateString()}
                     </Typography>
                   </Grid>
@@ -197,22 +367,38 @@ function ViewProfile() {
             </Paper>
           )}
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<Lock />}
-              onClick={() => navigate('/profile/password')}
-            >
-              Change Password
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Notifications />}
-              onClick={() => navigate('/profile/notifications')}
-            >
-              Notification Settings
-            </Button>
-          </Box>
+          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+            <Grid item xs={6} sm="auto">
+              <Button
+                variant="outlined"
+                startIcon={<Lock sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+                onClick={() => navigate('/profile/password')}
+                fullWidth={isSmallScreen}
+                size={isSmallScreen ? 'small' : 'medium'}
+                sx={{ 
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  py: { xs: 1, sm: 1.5 }
+                }}
+              >
+                Change Password
+              </Button>
+            </Grid>
+            <Grid item xs={6} sm="auto">
+              <Button
+                variant="outlined"
+                startIcon={<Notifications sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+                onClick={() => navigate('/profile/notifications')}
+                fullWidth={isSmallScreen}
+                size={isSmallScreen ? 'small' : 'medium'}
+                sx={{ 
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  py: { xs: 1, sm: 1.5 }
+                }}
+              >
+                Notification Settings
+              </Button>
+            </Grid>
+          </Grid>
         </Grid>
       </Grid>
     </Box>

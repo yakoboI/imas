@@ -64,21 +64,29 @@ const thermalTemplate = `
     {{/if}}
     <div class="company-name">{{company.name}}</div>
     {{#if company.address}}
-    <div>{{company.address}}</div>
+    <div style="font-size: 11px; margin: 2px 0;"><strong>LOCATION:</strong> {{company.address}}</div>
     {{/if}}
     {{#if company.phone}}
-    <div>Phone: {{company.phone}}</div>
+    <div style="font-size: 11px; margin: 2px 0;"><strong>PHONE:</strong> {{company.phone}}</div>
+    {{/if}}
+    {{#if company.email}}
+    <div style="font-size: 11px; margin: 2px 0;"><strong>EMAIL:</strong> {{company.email}}</div>
+    {{/if}}
+    {{#if company.taxId}}
+    <div style="font-size: 11px; margin: 2px 0;"><strong>TAX ID:</strong> {{company.taxId}}</div>
+    {{/if}}
+    {{#if company.website}}
+    <div style="font-size: 11px; margin: 2px 0;"><strong>WEBSITE:</strong> {{company.website}}</div>
     {{/if}}
   </div>
   
   <div class="divider"></div>
   
   <div class="receipt-info">
-    <div><strong>Receipt:</strong> {{receipt.number}}</div>
-    <div><strong>Date:</strong> {{receipt.date}} {{receipt.time}}</div>
-    {{#if customer}}
-    <div><strong>Customer:</strong> {{customer.name}}</div>
-    {{/if}}
+    <div><strong>RECEIPT:</strong> {{receipt.number}}</div>
+    <div><strong>ORDER:</strong> {{receipt.orderNumber}}</div>
+    <div><strong>DATE:</strong> {{receipt.date}} {{receipt.time}}</div>
+    <div><strong>CUSTOMER:</strong> {{#if customer}}{{customer.name}}{{else}}Walk-in Customer{{/if}}</div>
   </div>
   
   <div class="divider"></div>
@@ -88,6 +96,9 @@ const thermalTemplate = `
     <div class="item-row">
       <div>
         <div>{{description}}</div>
+        {{#if sku}}
+        <div style="font-size: 10px; color: #666;">SKU: {{sku}}</div>
+        {{/if}}
         <div style="font-size: 10px;">{{quantity}} x {{unitPrice}}</div>
       </div>
       <div>{{subtotal}}</div>
@@ -99,38 +110,37 @@ const thermalTemplate = `
   
   <div class="totals">
     <div class="item-row">
-      <div>Subtotal:</div>
+      <div><strong>SUBTOTAL:</strong></div>
       <div>{{receipt.subtotal}}</div>
     </div>
     {{#if receipt.tax}}
     <div class="item-row">
-      <div>Tax:</div>
+      <div><strong>TAX:</strong></div>
       <div>{{receipt.tax}}</div>
     </div>
     {{/if}}
     {{#if receipt.discount}}
     <div class="item-row">
-      <div>Discount:</div>
+      <div><strong>DISCOUNT:</strong></div>
       <div>-{{receipt.discount}}</div>
     </div>
     {{/if}}
     <div class="total-row">
-      <div>TOTAL:</div>
+      <div><strong>TOTAL:</strong></div>
       <div>{{receipt.total}}</div>
     </div>
   </div>
   
   {{#if receipt.paymentMethod}}
   <div class="receipt-info">
-    <div><strong>Payment:</strong> {{receipt.paymentMethod}}</div>
+    <div><strong>PAYMENT:</strong> {{receipt.paymentMethod}}</div>
   </div>
   {{/if}}
   
   <div class="divider"></div>
   
   <div class="footer">
-    <div>Thank you for your business!</div>
-    <div>Visit again!</div>
+    <div>Thank you for your business! Visit again</div>
   </div>
 </body>
 </html>
@@ -234,49 +244,56 @@ const a4Template = `
       {{/if}}
       <div class="company-name">{{company.name}}</div>
       {{#if company.address}}
-      <div>{{company.address}}</div>
+      <div style="margin: 5px 0;"><strong>LOCATION:</strong> {{company.address}}</div>
       {{/if}}
-      {{#if company.phone}}
-      <div>Phone: {{company.phone}}</div>
-      {{/if}}
-      {{#if company.email}}
-      <div>Email: {{company.email}}</div>
-      {{/if}}
-      {{#if company.taxId}}
-      <div>Tax ID: {{company.taxId}}</div>
-      {{/if}}
+      <div style="margin-top: 10px;">
+        {{#if company.phone}}
+        <div style="margin: 3px 0;"><strong>PHONE:</strong> {{company.phone}}</div>
+        {{/if}}
+        {{#if company.email}}
+        <div style="margin: 3px 0;"><strong>EMAIL:</strong> {{company.email}}</div>
+        {{/if}}
+        {{#if company.website}}
+        <div style="margin: 3px 0;"><strong>WEBSITE:</strong> {{company.website}}</div>
+        {{/if}}
+        {{#if company.taxId}}
+        <div style="margin: 3px 0;"><strong>TAX ID:</strong> {{company.taxId}}</div>
+        {{/if}}
+      </div>
     </div>
     <div class="receipt-title">RECEIPT</div>
   </div>
   
   <div class="receipt-info">
     <div class="info-section">
-      <h3>Receipt Details</h3>
-      <div><strong>Receipt Number:</strong> {{receipt.number}}</div>
-      <div><strong>Date:</strong> {{receipt.date}}</div>
-      <div><strong>Time:</strong> {{receipt.time}}</div>
+      <h3>RECEIPT DETAILS</h3>
+      <div><strong>RECEIPT NUMBER:</strong> {{receipt.number}}</div>
+      <div><strong>ORDER NUMBER:</strong> {{receipt.orderNumber}}</div>
+      <div><strong>DATE:</strong> {{receipt.date}}</div>
+      <div><strong>TIME:</strong> {{receipt.time}}</div>
     </div>
-    {{#if customer}}
     <div class="info-section">
-      <h3>Bill To</h3>
-      <div><strong>{{customer.name}}</strong></div>
+      <h3>BILL TO</h3>
+      <div><strong>{{#if customer}}{{customer.name}}{{else}}Walk-in Customer{{/if}}</strong></div>
+      {{#if customer}}
       {{#if customer.address}}
       <div>{{customer.address}}</div>
       {{/if}}
       {{#if customer.phone}}
-      <div>Phone: {{customer.phone}}</div>
+      <div><strong>PHONE:</strong> {{customer.phone}}</div>
       {{/if}}
       {{#if customer.email}}
-      <div>Email: {{customer.email}}</div>
+      <div><strong>EMAIL:</strong> {{customer.email}}</div>
+      {{/if}}
       {{/if}}
     </div>
-    {{/if}}
   </div>
   
   <table class="items-table">
     <thead>
       <tr>
         <th>Description</th>
+        <th>SKU</th>
         <th>Quantity</th>
         <th>Unit Price</th>
         <th>Tax</th>
@@ -287,6 +304,7 @@ const a4Template = `
       {{#each items}}
       <tr>
         <td>{{description}}</td>
+        <td>{{#if sku}}{{sku}}{{else}}N/A{{/if}}</td>
         <td>{{quantity}}</td>
         <td>{{unitPrice}}</td>
         <td>{{tax}}</td>
@@ -298,36 +316,35 @@ const a4Template = `
   
   <div class="totals">
     <div class="total-row">
-      <div class="total-label">Subtotal:</div>
+      <div class="total-label"><strong>SUBTOTAL:</strong></div>
       <div class="total-value">{{receipt.subtotal}}</div>
     </div>
     {{#if receipt.tax}}
     <div class="total-row">
-      <div class="total-label">Tax:</div>
+      <div class="total-label"><strong>TAX:</strong></div>
       <div class="total-value">{{receipt.tax}}</div>
     </div>
     {{/if}}
     {{#if receipt.discount}}
     <div class="total-row">
-      <div class="total-label">Discount:</div>
+      <div class="total-label"><strong>DISCOUNT:</strong></div>
       <div class="total-value">-{{receipt.discount}}</div>
     </div>
     {{/if}}
     <div class="total-row" style="font-size: 16px; margin-top: 10px; border-top: 2px solid #000; padding-top: 10px;">
-      <div class="total-label">TOTAL:</div>
-      <div class="total-value">{{receipt.total}}</div>
+      <div class="total-label"><strong>TOTAL:</strong></div>
+      <div class="total-value"><strong>{{receipt.total}}</strong></div>
     </div>
   </div>
   
   {{#if receipt.paymentMethod}}
   <div style="margin-top: 20px;">
-    <strong>Payment Method:</strong> {{receipt.paymentMethod}}
+    <strong>PAYMENT METHOD:</strong> {{receipt.paymentMethod}}
   </div>
   {{/if}}
   
   <div class="footer">
-    <div>Thank you for your business!</div>
-    <div>{{company.name}} - {{company.address}}</div>
+    <div>Thank you for your business! Visit again</div>
   </div>
 </body>
 </html>
@@ -389,6 +406,23 @@ const emailTemplate = `
 <body>
   <div class="header">
     <div class="company-name">{{company.name}}</div>
+    {{#if company.address}}
+    <div style="margin: 5px 0; color: #666;"><strong>LOCATION:</strong> {{company.address}}</div>
+    {{/if}}
+    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+      {{#if company.phone}}
+      <div><strong>PHONE:</strong> {{company.phone}}</div>
+      {{/if}}
+      {{#if company.email}}
+      <div><strong>EMAIL:</strong> {{company.email}}</div>
+      {{/if}}
+      {{#if company.website}}
+      <div><strong>WEBSITE:</strong> {{company.website}}</div>
+      {{/if}}
+      {{#if company.taxId}}
+      <div><strong>TAX ID:</strong> {{company.taxId}}</div>
+      {{/if}}
+    </div>
   </div>
   
   <p>Dear {{#if customer}}{{customer.name}}{{else}}Customer{{/if}},</p>
@@ -396,8 +430,10 @@ const emailTemplate = `
   <p>Thank you for your purchase! Please find your receipt below:</p>
   
   <div class="receipt-info">
-    <div><strong>Receipt Number:</strong> {{receipt.number}}</div>
-    <div><strong>Date:</strong> {{receipt.date}} {{receipt.time}}</div>
+    <div><strong>RECEIPT NUMBER:</strong> {{receipt.number}}</div>
+    <div><strong>ORDER NUMBER:</strong> {{receipt.orderNumber}}</div>
+    <div><strong>DATE:</strong> {{receipt.date}} {{receipt.time}}</div>
+    <div><strong>CUSTOMER:</strong> {{#if customer}}{{customer.name}}{{else}}Walk-in Customer{{/if}}</div>
   </div>
   
   <div class="items">
@@ -410,12 +446,12 @@ const emailTemplate = `
   </div>
   
   <div class="totals">
-    <div class="total-row"><strong>Subtotal:</strong> {{receipt.subtotal}}</div>
+    <div class="total-row"><strong>SUBTOTAL:</strong> {{receipt.subtotal}}</div>
     {{#if receipt.tax}}
-    <div class="total-row"><strong>Tax:</strong> {{receipt.tax}}</div>
+    <div class="total-row"><strong>TAX:</strong> {{receipt.tax}}</div>
     {{/if}}
     {{#if receipt.discount}}
-    <div class="total-row"><strong>Discount:</strong> -{{receipt.discount}}</div>
+    <div class="total-row"><strong>DISCOUNT:</strong> -{{receipt.discount}}</div>
     {{/if}}
     <div class="total-row" style="font-size: 18px; margin-top: 10px;">
       <strong>TOTAL: {{receipt.total}}</strong>
@@ -423,11 +459,7 @@ const emailTemplate = `
   </div>
   
   <div class="footer">
-    <p>Thank you for your business!</p>
-    <p>{{company.name}}</p>
-    {{#if company.address}}
-    <p>{{company.address}}</p>
-    {{/if}}
+    <p>Thank you for your business! Visit again</p>
   </div>
 </body>
 </html>

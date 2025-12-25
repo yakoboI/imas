@@ -16,9 +16,23 @@ export const login = createAsyncThunk(
   }
 );
 
-export const logout = createAsyncThunk('auth/logout', async () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
+  try {
+    // Call backend logout endpoint to log the action
+    try {
+      await authService.logout();
+    } catch (error) {
+      // Don't fail if backend call fails - still clear local storage
+      console.error('Failed to call logout endpoint:', error);
+    }
+  } catch (error) {
+    // Continue with logout even if API call fails
+    console.error('Logout error:', error);
+  } finally {
+    // Always clear local storage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
   return null;
 });
 

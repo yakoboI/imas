@@ -11,12 +11,16 @@ import {
   Switch,
   FormControlLabel,
   Divider,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Save, Backup } from '@mui/icons-material';
 import superAdminService from '../../services/superAdminService';
 import { toast } from 'react-toastify';
 
 function SystemSettings() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [settings, setSettings] = useState({});
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -78,9 +82,23 @@ function SystemSettings() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        System Settings
-      </Typography>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            System Settings
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Configure platform-wide settings and preferences
+          </Typography>
+        </Box>
+      </Box>
 
       {health && (
         <Alert
@@ -91,10 +109,10 @@ function SystemSettings() {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 2, sm: 3 }}>
         <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
+          <Paper sx={{ p: { xs: 2, sm: 3 } }}>
+            <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
               General Settings
             </Typography>
             <Divider sx={{ my: 2 }} />
@@ -196,6 +214,8 @@ function SystemSettings() {
               startIcon={<Save />}
               onClick={handleSave}
               disabled={saving}
+              size={isSmallScreen ? 'small' : 'medium'}
+              fullWidth={isSmallScreen}
               sx={{ mt: 2 }}
             >
               {saving ? 'Saving...' : 'Save Settings'}
@@ -204,8 +224,8 @@ function SystemSettings() {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
+          <Paper sx={{ p: { xs: 2, sm: 3 } }}>
+            <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
               System Actions
             </Typography>
             <Button
@@ -214,6 +234,7 @@ function SystemSettings() {
               startIcon={<Backup />}
               onClick={handleBackup}
               sx={{ mt: 2 }}
+              size={isSmallScreen ? 'small' : 'medium'}
             >
               Trigger Backup
             </Button>

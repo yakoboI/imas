@@ -1,9 +1,25 @@
 const AuthService = require('../services/authService');
 const AuditService = require('../services/auditService');
 const SystemSettingsService = require('../services/systemSettingsService');
-const { Tenant, User, SuperAdmin, SystemLog, SystemLogArchive, AuditLog } = require('../models/index');
+const { Tenant, User, SuperAdmin, SystemLog, SystemLogArchive, AuditLog, Subscription, Order } = require('../models/index');
 const { sequelize } = require('../config/database');
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
+const constants = require('../utils/constants');
+const cloudinary = require('../config/cloudinary');
+const multer = require('multer');
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 class SuperAdminController {
   // SuperAdmin login
@@ -35,6 +51,15 @@ class SuperAdminController {
   // Logout
   static async logout(req, res, next) {
     try {
+      // Log logout action for superadmin
+      await SystemLog.create({
+        superadmin_id: req.user.id,
+        action: 'LOGOUT',
+        description: `SuperAdmin ${req.user.email} logged out manually`,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent']
+      });
+      
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
       next(error);
@@ -59,8 +84,29 @@ class SuperAdminController {
         order: [['created_at', 'DESC']]
       });
 
+      // Get user and warehouse counts for each tenant
+      const User = require('../models/User');
+      const Warehouse = require('../models/Warehouse');
+      
+      const tenantsWithCounts = await Promise.all(
+        rows.map(async (tenant) => {
+          const userCount = await User.count({ 
+            where: { tenant_id: tenant.id, status: 'active' } 
+          });
+          const warehouseCount = await Warehouse.count({ 
+            where: { tenant_id: tenant.id, status: 'active' } 
+          });
+          
+          return {
+            ...tenant.toJSON(),
+            user_count: userCount,
+            warehouse_count: warehouseCount
+          };
+        })
+      );
+
       res.json({
-        tenants: rows,
+        tenants: tenantsWithCounts,
         pagination: {
           total: count,
           page: parseInt(page),
@@ -76,7 +122,7 @@ class SuperAdminController {
   // Create tenant
   static async createTenant(req, res, next) {
     try {
-      const { name, subdomain, planType, maxUsers } = req.body;
+      const { name, subdomain, planType, maxUsers, maxWarehouses } = req.body;
 
       if (!name || !subdomain) {
         return res.status(400).json({ error: 'Name and subdomain are required' });
@@ -88,11 +134,35 @@ class SuperAdminController {
         return res.status(409).json({ error: 'Subdomain already taken' });
       }
 
+      // Get default max_users and max_warehouses based on plan if not provided
+      const plan = planType || 'free';
+      const defaultMaxUsers = constants.PLAN_PRICES[plan]?.maxUsers || 5;
+      const defaultMaxWarehouses = constants.PLAN_PRICES[plan]?.maxWarehouses || 1;
+      const finalMaxUsers = maxUsers || defaultMaxUsers;
+      const finalMaxWarehouses = maxWarehouses || defaultMaxWarehouses;
+
+      // Validate max_users is within plan limits
+      const planMaxUsers = constants.PLAN_PRICES[plan]?.maxUsers || 5;
+      if (finalMaxUsers > planMaxUsers) {
+        return res.status(400).json({ 
+          error: `Maximum users for ${plan} plan is ${planMaxUsers}. You cannot assign more than the plan allows.` 
+        });
+      }
+
+      // Validate max_warehouses is within plan limits
+      const planMaxWarehouses = constants.PLAN_PRICES[plan]?.maxWarehouses || 1;
+      if (finalMaxWarehouses > planMaxWarehouses) {
+        return res.status(400).json({ 
+          error: `Maximum warehouses for ${plan} plan is ${planMaxWarehouses === 999999 ? 'unlimited' : planMaxWarehouses}. You cannot assign more than the plan allows.` 
+        });
+      }
+
       const tenant = await Tenant.create({
         name,
         subdomain,
-        plan_type: planType || 'free',
-        max_users: maxUsers || 5,
+        plan_type: plan,
+        max_users: finalMaxUsers,
+        max_warehouses: finalMaxWarehouses,
         status: 'active'
       });
 
@@ -147,8 +217,92 @@ class SuperAdminController {
       }
 
       const oldValues = { ...tenant.toJSON() };
+      const updateData = { ...req.body };
+      const Warehouse = require('../models/Warehouse');
 
-      await tenant.update(req.body);
+      // If plan_type is being updated, validate and set max_users and max_warehouses accordingly
+      if (updateData.plan_type) {
+        const planMaxUsers = constants.PLAN_PRICES[updateData.plan_type]?.maxUsers || 5;
+        const planMaxWarehouses = constants.PLAN_PRICES[updateData.plan_type]?.maxWarehouses || 1;
+        
+        // If max_users is provided, validate it's within plan limits
+        if (updateData.max_users && updateData.max_users > planMaxUsers) {
+          return res.status(400).json({ 
+            error: `Maximum users for ${updateData.plan_type} plan is ${planMaxUsers}. You cannot assign more than the plan allows.` 
+          });
+        }
+        
+        // If max_warehouses is provided, validate it's within plan limits
+        if (updateData.max_warehouses && updateData.max_warehouses > planMaxWarehouses) {
+          return res.status(400).json({ 
+            error: `Maximum warehouses for ${updateData.plan_type} plan is ${planMaxWarehouses === 999999 ? 'unlimited' : planMaxWarehouses}. You cannot assign more than the plan allows.` 
+          });
+        }
+        
+        // If max_users not provided but plan changed, set default for new plan
+        if (!updateData.max_users) {
+          updateData.max_users = planMaxUsers;
+        }
+        
+        // If max_warehouses not provided but plan changed, set default for new plan
+        if (!updateData.max_warehouses) {
+          updateData.max_warehouses = planMaxWarehouses;
+        }
+        
+        // Check if current user count exceeds new max_users
+        const currentUserCount = await User.count({ where: { tenant_id: id } });
+        if (currentUserCount > updateData.max_users) {
+          return res.status(400).json({ 
+            error: `Cannot change plan: Tenant currently has ${currentUserCount} users, which exceeds the ${updateData.plan_type} plan limit of ${updateData.max_users} users. Please reduce users first or choose a higher plan.` 
+          });
+        }
+        
+        // Check if current warehouse count exceeds new max_warehouses
+        const currentWarehouseCount = await Warehouse.count({ where: { tenant_id: id, status: 'active' } });
+        if (currentWarehouseCount > updateData.max_warehouses) {
+          return res.status(400).json({ 
+            error: `Cannot change plan: Tenant currently has ${currentWarehouseCount} warehouse${currentWarehouseCount === 1 ? '' : 'es'}, which exceeds the ${updateData.plan_type} plan limit of ${updateData.max_warehouses === 999999 ? 'unlimited' : updateData.max_warehouses} warehouse${updateData.max_warehouses === 1 ? '' : 'es'}. Please reduce warehouses first or choose a higher plan.` 
+          });
+        }
+      } else {
+        // If only max_users is being updated, validate against current plan
+        if (updateData.max_users) {
+          const planMaxUsers = constants.PLAN_PRICES[tenant.plan_type]?.maxUsers || 5;
+          if (updateData.max_users > planMaxUsers) {
+            return res.status(400).json({ 
+              error: `Maximum users for ${tenant.plan_type} plan is ${planMaxUsers}. You cannot assign more than the plan allows.` 
+            });
+          }
+          
+          // Check if current user count exceeds new max_users
+          const currentUserCount = await User.count({ where: { tenant_id: id } });
+          if (currentUserCount > updateData.max_users) {
+            return res.status(400).json({ 
+              error: `Cannot set max_users to ${updateData.max_users}: Tenant currently has ${currentUserCount} users. Please reduce users first.` 
+            });
+          }
+        }
+        
+        // If only max_warehouses is being updated, validate against current plan
+        if (updateData.max_warehouses) {
+          const planMaxWarehouses = constants.PLAN_PRICES[tenant.plan_type]?.maxWarehouses || 1;
+          if (updateData.max_warehouses > planMaxWarehouses) {
+            return res.status(400).json({ 
+              error: `Maximum warehouses for ${tenant.plan_type} plan is ${planMaxWarehouses === 999999 ? 'unlimited' : planMaxWarehouses}. You cannot assign more than the plan allows.` 
+            });
+          }
+          
+          // Check if current warehouse count exceeds new max_warehouses
+          const currentWarehouseCount = await Warehouse.count({ where: { tenant_id: id, status: 'active' } });
+          if (currentWarehouseCount > updateData.max_warehouses) {
+            return res.status(400).json({ 
+              error: `Cannot set max_warehouses to ${updateData.max_warehouses}: Tenant currently has ${currentWarehouseCount} warehouse${currentWarehouseCount === 1 ? '' : 'es'}. Please reduce warehouses first.` 
+            });
+          }
+        }
+      }
+
+      await tenant.update(updateData);
 
       // Log system action
       await SystemLog.create({
@@ -670,18 +824,221 @@ class SuperAdminController {
     }
   }
 
+  // Convert currency to USD
+  static convertToUSD(amount, fromCurrency = 'USD') {
+    if (!amount || amount === 0) return 0;
+    if (fromCurrency === 'USD') return parseFloat(amount);
+    
+    const rate = constants.CURRENCY_RATES[fromCurrency.toUpperCase()] || 1.0;
+    return parseFloat(amount) * rate;
+  }
+
   // Get analytics overview
   static async getAnalyticsOverview(req, res, next) {
     try {
       const totalTenants = await Tenant.count();
       const activeTenants = await Tenant.count({ where: { status: 'active' } });
       const totalUsers = await User.count();
-      // Add more metrics
+      
+      // Calculate revenue from active subscriptions first
+      const activeSubscriptions = await Subscription.findAll({
+        where: { status: 'active' },
+        attributes: ['amount', 'currency', 'billing_cycle', 'tenant_id']
+      });
+
+      let totalRevenueUSD = 0;
+      let monthlyRevenueUSD = 0;
+      const tenantsWithSubscriptions = new Set();
+      
+      activeSubscriptions.forEach(sub => {
+        const amountUSD = this.convertToUSD(sub.amount, sub.currency);
+        totalRevenueUSD += amountUSD;
+        tenantsWithSubscriptions.add(sub.tenant_id);
+        
+        // Calculate monthly equivalent
+        let monthlyAmount = amountUSD;
+        if (sub.billing_cycle === 'quarterly') {
+          monthlyAmount = amountUSD / 3;
+        } else if (sub.billing_cycle === 'yearly') {
+          monthlyAmount = amountUSD / 12;
+        }
+        monthlyRevenueUSD += monthlyAmount;
+      });
+
+      // Also calculate revenue from tenant plan types (for tenants without subscriptions)
+      // This ensures we show real revenue even if subscriptions aren't set up
+      if (tenantsWithSubscriptions.size > 0) {
+        const tenantsWithoutSubscriptions = await Tenant.findAll({
+          where: {
+            status: 'active',
+            id: { [Op.notIn]: Array.from(tenantsWithSubscriptions) }
+          },
+          attributes: ['id', 'plan_type']
+        });
+
+        tenantsWithoutSubscriptions.forEach(tenant => {
+          const planPrice = constants.PLAN_PRICES[tenant.plan_type]?.monthly || 0;
+          if (planPrice > 0) {
+            totalRevenueUSD += planPrice;
+            monthlyRevenueUSD += planPrice;
+          }
+        });
+      } else {
+        // If no subscriptions exist, calculate revenue from all active tenants based on their plans
+        const allActiveTenants = await Tenant.findAll({
+          where: { status: 'active' },
+          attributes: ['id', 'plan_type']
+        });
+
+        allActiveTenants.forEach(tenant => {
+          const planPrice = constants.PLAN_PRICES[tenant.plan_type]?.monthly || 0;
+          if (planPrice > 0) {
+            totalRevenueUSD += planPrice;
+            monthlyRevenueUSD += planPrice;
+          }
+        });
+      }
+
+      // Get current month's revenue (from subscriptions started this month)
+      const currentMonth = new Date();
+      currentMonth.setDate(1);
+      currentMonth.setHours(0, 0, 0, 0);
+      
+      const thisMonthSubscriptions = await Subscription.findAll({
+        where: {
+          status: 'active',
+          start_date: { [Op.gte]: currentMonth }
+        },
+        attributes: ['amount', 'currency', 'billing_cycle']
+      });
+
+      let thisMonthRevenueUSD = 0;
+      thisMonthSubscriptions.forEach(sub => {
+        const amountUSD = this.convertToUSD(sub.amount, sub.currency);
+        let monthlyAmount = amountUSD;
+        if (sub.billing_cycle === 'quarterly') {
+          monthlyAmount = amountUSD / 3;
+        } else if (sub.billing_cycle === 'yearly') {
+          monthlyAmount = amountUSD / 12;
+        }
+        thisMonthRevenueUSD += monthlyAmount;
+      });
+
+      // Also add revenue from tenants created this month (based on their plan)
+      if (tenantsWithSubscriptions.size > 0) {
+        const thisMonthTenants = await Tenant.findAll({
+          where: {
+            status: 'active',
+            created_at: { [Op.gte]: currentMonth },
+            id: { [Op.notIn]: Array.from(tenantsWithSubscriptions) }
+          },
+          attributes: ['id', 'plan_type']
+        });
+
+        thisMonthTenants.forEach(tenant => {
+          const planPrice = constants.PLAN_PRICES[tenant.plan_type]?.monthly || 0;
+          if (planPrice > 0) {
+            thisMonthRevenueUSD += planPrice;
+          }
+        });
+      } else {
+        // If no subscriptions, calculate from all tenants created this month
+        const thisMonthTenants = await Tenant.findAll({
+          where: {
+            status: 'active',
+            created_at: { [Op.gte]: currentMonth }
+          },
+          attributes: ['id', 'plan_type']
+        });
+
+        thisMonthTenants.forEach(tenant => {
+          const planPrice = constants.PLAN_PRICES[tenant.plan_type]?.monthly || 0;
+          if (planPrice > 0) {
+            thisMonthRevenueUSD += planPrice;
+          }
+        });
+      }
+
+      // Get usage statistics
+      const totalOrders = await Order.count();
+      const totalProducts = await require('../models/Product').count();
+
+      // Calculate tenant growth
+      const thisMonthStart = new Date();
+      thisMonthStart.setDate(1);
+      thisMonthStart.setHours(0, 0, 0, 0);
+      
+      const newTenantsThisMonth = await Tenant.count({
+        where: {
+          created_at: { [Op.gte]: thisMonthStart }
+        }
+      });
+
+      const lastMonthStart = new Date(thisMonthStart);
+      lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
+      const lastMonthEnd = new Date(thisMonthStart);
+      
+      const tenantsLastMonth = await Tenant.count({
+        where: {
+          created_at: { [Op.gte]: lastMonthStart, [Op.lt]: lastMonthEnd }
+        }
+      });
+
+      const growthRate = tenantsLastMonth > 0 
+        ? ((newTenantsThisMonth - tenantsLastMonth) / tenantsLastMonth * 100).toFixed(1)
+        : newTenantsThisMonth > 0 ? 100 : 0;
+
+      // Average users per tenant
+      const avgUsersPerTenant = totalTenants > 0 ? (totalUsers / totalTenants).toFixed(1) : 0;
+
+      // Plan distribution
+      const planDistribution = await Tenant.findAll({
+        attributes: [
+          'plan_type',
+          [fn('COUNT', col('id')), 'count']
+        ],
+        group: ['plan_type'],
+        raw: true
+      });
+
+      const planCounts = {};
+      planDistribution.forEach(p => {
+        planCounts[p.plan_type] = parseInt(p.count);
+      });
+
+      // Additional usage statistics
+      const totalCustomers = await require('../models/Customer').count();
+      const totalReceipts = await require('../models/Receipt').count({ where: { status: 'active' } });
+      
+      // Revenue per tenant (average)
+      const avgRevenuePerTenant = activeTenants > 0 
+        ? (monthlyRevenueUSD / activeTenants).toFixed(2) 
+        : 0;
+
+      // Get system health for uptime calculation
+      const { testConnection } = require('../config/database');
+      const dbConnected = await testConnection();
+      const systemUptime = dbConnected ? 99.9 : 0; // Simplified - can be enhanced with actual uptime tracking
 
       res.json({
         totalTenants,
         activeTenants,
-        totalUsers
+        totalUsers,
+        totalRevenue: parseFloat(totalRevenueUSD.toFixed(2)),
+        monthlyRevenue: parseFloat(monthlyRevenueUSD.toFixed(2)),
+        thisMonthRevenue: parseFloat(thisMonthRevenueUSD.toFixed(2)),
+        activeSubscriptions: activeSubscriptions.length,
+        totalOrders,
+        totalProducts,
+        totalCustomers,
+        totalReceipts,
+        newTenantsThisMonth,
+        growthRate: parseFloat(growthRate),
+        avgUsersPerTenant: parseFloat(avgUsersPerTenant),
+        avgRevenuePerTenant: parseFloat(avgRevenuePerTenant),
+        planDistribution: planCounts,
+        systemUptime: parseFloat(systemUptime.toFixed(1)),
+        systemHealth: dbConnected ? 'healthy' : 'unhealthy'
       });
     } catch (error) {
       next(error);
@@ -737,9 +1094,15 @@ class SuperAdminController {
   // Trigger backup
   static async triggerBackup(req, res, next) {
     try {
-      // Implement backup trigger
-      res.json({ message: 'Backup triggered successfully' });
+      const BackupService = require('../services/backupService');
+      const result = await BackupService.performBackup(req.user.id);
+      
+      res.json({ 
+        message: 'Backup triggered successfully',
+        backup: result
+      });
     } catch (error) {
+      console.error('Error triggering backup:', error);
       next(error);
     }
   }
@@ -758,7 +1121,14 @@ class SuperAdminController {
   // Update system settings
   static async updateSystemSettings(req, res, next) {
     try {
+      const oldSettings = await SystemSettingsService.getSettings();
       const settings = await SystemSettingsService.saveSettings(req.body);
+      
+      // Restart backup scheduler if backup frequency changed
+      if (oldSettings.backupFrequency !== settings.backupFrequency) {
+        const backupScheduler = require('../services/backupScheduler');
+        await backupScheduler.restart();
+      }
       
       // Log system action (non-blocking)
       SystemLog.create({
@@ -780,7 +1150,61 @@ class SuperAdminController {
       next(error);
     }
   }
+
+  // Upload avatar
+  static async uploadAvatar(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const superadminId = req.user.id;
+      const superadmin = await SuperAdmin.findByPk(superadminId);
+
+      if (!superadmin) {
+        return res.status(404).json({ error: 'SuperAdmin not found' });
+      }
+
+      // Upload to Cloudinary
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'avatars/superadmin',
+            public_id: `superadmin-${superadminId}`,
+            transformation: [
+              { width: 200, height: 200, crop: 'fill', gravity: 'face' },
+              { quality: 'auto' }
+            ]
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      const oldAvatarUrl = superadmin.avatar_url;
+      await superadmin.update({ avatar_url: result.secure_url });
+
+      // Log to system logs
+      await SystemLog.create({
+        superadmin_id: superadminId,
+        action: 'UPDATE_PROFILE_PICTURE',
+        description: `SuperAdmin ${superadmin.email} updated profile picture`,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent']
+      });
+
+      res.json({
+        message: 'Avatar uploaded successfully',
+        avatar_url: result.secure_url
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
-module.exports = SuperAdminController;
+module.exports = { SuperAdminController, upload };
 

@@ -19,9 +19,11 @@ const apiLimiter = rateLimit({
 // Strict rate limiter for auth endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login requests per windowMs
+  max: isDevelopment ? 50 : 5, // Much higher limit in development (50 vs 5)
   message: 'Too many login attempts, please try again later.',
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true, // Only count failed login attempts
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
 // Receipt generation rate limiter

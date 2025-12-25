@@ -8,7 +8,7 @@ const drawerWidth = 280;
 
 function Layout() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('lg')); // Changed from 'md' to 'lg' to include iPad
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleDrawerToggle = () => {
@@ -20,7 +20,7 @@ function Layout() {
       <Navbar onMenuClick={handleDrawerToggle} />
       <Box
         component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+        sx={{ width: { lg: drawerWidth }, flexShrink: { lg: 0 } }}
       >
         <Drawer
           variant={isMobile ? 'temporary' : 'permanent'}
@@ -45,8 +45,8 @@ function Layout() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          mt: 8, // Margin-top to account for fixed AppBar (64px = 8 * 8px)
+          p: { xs: 2, sm: 3 },
+          mt: { xs: 7, sm: 8 }, // Margin-top to account for fixed AppBar
           backgroundColor: 'background.default',
           minHeight: 'calc(100vh - 64px)', // Full height minus AppBar
           minWidth: 0, // Fix flexbox min-width issue - allows flex items to shrink below content size

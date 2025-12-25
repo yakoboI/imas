@@ -53,6 +53,57 @@ const authenticate = async (req, res, next) => {
 
     next();
   } catch (error) {
+    // Check if token expired (automatic logout due to inactivity)
+    if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
+      try {
+        const AuditService = require('../services/auditService');
+        
+        // Try to decode the expired token to get user info
+        let decoded;
+        try {
+          decoded = jwt.decode(req.header('Authorization')?.replace('Bearer ', ''));
+        } catch (decodeError) {
+          // If we can't decode, just return error without logging
+          return res.status(401).json({ error: 'Invalid token.' });
+        }
+        
+        // Log automatic logout for regular users
+        if (decoded && decoded.userId) {
+          const user = await User.findByPk(decoded.userId);
+          if (user) {
+            await AuditService.logAction({
+              tenant_id: user.tenant_id,
+              user_id: user.id,
+              action: 'LOGOUT',
+              entity_type: 'user',
+              entity_id: user.id,
+              description: `User ${user.email} automatically logged out due to session timeout/inactivity`,
+              ip_address: req.ip,
+              user_agent: req.headers['user-agent']
+            });
+          }
+        }
+        
+        // Log automatic logout for superadmin
+        if (decoded && decoded.superadminId) {
+          const SystemLog = require('../models/SystemLog');
+          const superadmin = await SuperAdmin.findByPk(decoded.superadminId);
+          if (superadmin) {
+            await SystemLog.create({
+              superadmin_id: superadmin.id,
+              action: 'LOGOUT',
+              description: `SuperAdmin ${superadmin.email} automatically logged out due to session timeout/inactivity`,
+              ip_address: req.ip,
+              user_agent: req.headers['user-agent']
+            });
+          }
+        }
+      } catch (logError) {
+        // Don't fail the request if logging fails
+        console.error('Error logging automatic logout:', logError);
+      }
+    }
+    
     res.status(401).json({ error: 'Invalid token.' });
   }
 };

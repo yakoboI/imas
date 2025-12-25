@@ -23,6 +23,8 @@ import {
   Chip,
   Card,
   CardContent,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add,
@@ -34,6 +36,9 @@ import {
   Print,
   GetApp,
   Receipt,
+  ArrowBack,
+  Close,
+  ShoppingCartOutlined as OrderIcon,
 } from '@mui/icons-material';
 import orderService from '../services/orderService';
 import productService from '../services/productService';
@@ -44,6 +49,8 @@ import { toast } from 'react-toastify';
 import { formatCurrency } from '../utils/currency';
 
 function Sales() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,14 +61,18 @@ function Sales() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [processing, setProcessing] = useState(false);
   const [completedSales, setCompletedSales] = useState([]);
+  const [uncompletedOrders, setUncompletedOrders] = useState([]);
   const [loadingSales, setLoadingSales] = useState(false);
-  const [activeTab, setActiveTab] = useState('pos'); // 'pos' or 'history'
+  const [activeTab, setActiveTab] = useState('pos'); // 'pos', 'orders', or 'history'
+  const [showCartView, setShowCartView] = useState(false); // For small screens: show cart view or products view
+  const [productOrderHistory, setProductOrderHistory] = useState({}); // { productId: [orders] }
 
   useEffect(() => {
     loadProducts();
     loadCustomers();
     loadSettings();
     loadCompletedSales();
+    loadUncompletedOrders();
   }, []);
 
   const loadSettings = async () => {
@@ -79,7 +90,33 @@ function Sales() {
     setLoading(true);
     try {
       const response = await productService.getAllProducts();
-      setProducts(response.products || []);
+      const productsList = response.products || [];
+      setProducts(productsList);
+      
+      // Update cart items with latest stock quantities
+      if (cart.length > 0) {
+        setCart(cart.map(cartItem => {
+          const product = productsList.find(p => p.id === cartItem.product_id);
+          if (product) {
+            const availableStock = parseInt(product.stock_quantity) || 0;
+            // If cart quantity exceeds new stock, adjust it
+            const adjustedQuantity = Math.min(cartItem.quantity, availableStock);
+            if (adjustedQuantity !== cartItem.quantity && availableStock > 0) {
+              toast.warning(`${cartItem.product_name}: Quantity adjusted from ${cartItem.quantity} to ${adjustedQuantity} (available stock)`);
+            }
+            return {
+              ...cartItem,
+              stock_quantity: availableStock,
+              quantity: availableStock > 0 ? adjustedQuantity : 0,
+              subtotal: (availableStock > 0 ? adjustedQuantity : 0) * cartItem.unit_price
+            };
+          }
+          return cartItem;
+        }).filter(item => item.quantity > 0)); // Remove items with 0 quantity
+      }
+      
+      // Load order history for each product
+      loadProductOrderHistory(productsList);
     } catch (error) {
       if (error.response?.status !== 404) {
         console.error('Failed to load products:', error);
@@ -88,6 +125,29 @@ function Sales() {
       setProducts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadProductOrderHistory = async (productsList) => {
+    try {
+      const historyPromises = productsList.map(async (product) => {
+        try {
+          const response = await orderService.getOrdersByProduct(product.id);
+          return { productId: product.id, orders: response.orders || [] };
+        } catch (error) {
+          console.error(`Failed to load order history for product ${product.id}:`, error);
+          return { productId: product.id, orders: [] };
+        }
+      });
+
+      const historyResults = await Promise.all(historyPromises);
+      const historyMap = {};
+      historyResults.forEach(({ productId, orders }) => {
+        historyMap[productId] = orders;
+      });
+      setProductOrderHistory(historyMap);
+    } catch (error) {
+      console.error('Failed to load product order history:', error);
     }
   };
 
@@ -103,33 +163,63 @@ function Sales() {
     }
   };
 
-  const handleAddToCart = (product) => {
+  const handleAddToCart = (product, quantity = 1) => {
     const existingItem = cart.find(item => item.product_id === product.id);
+    const addQuantity = parseInt(quantity) || 1;
+    const availableStock = parseInt(product.stock_quantity) || 0;
+    
+    // Check if product has stock
+    if (availableStock === 0) {
+      toast.error(`${product.name} is out of stock`);
+      return;
+    }
     
     if (existingItem) {
+      // Check if adding this quantity would exceed available stock
+      const newQuantity = existingItem.quantity + addQuantity;
+      if (newQuantity > availableStock) {
+        toast.error(`Cannot add ${addQuantity} more. Only ${availableStock} available in stock (${existingItem.quantity} already in cart)`);
+        return;
+      }
       // Increase quantity if product already in cart
       setCart(cart.map(item =>
         item.product_id === product.id
-          ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * item.unit_price }
+          ? { ...item, quantity: newQuantity, subtotal: newQuantity * item.unit_price, stock_quantity: availableStock }
           : item
       ));
     } else {
+      // Check if requested quantity exceeds available stock
+      if (addQuantity > availableStock) {
+        toast.error(`Cannot add ${addQuantity}. Only ${availableStock} available in stock`);
+        return;
+      }
       // Add new item to cart
       const newItem = {
         product_id: product.id,
         product_name: product.name,
         product_sku: product.sku,
-        quantity: 1,
+        quantity: addQuantity,
         unit_price: parseFloat(product.price) || 0,
-        subtotal: parseFloat(product.price) || 0,
+        subtotal: addQuantity * (parseFloat(product.price) || 0),
+        stock_quantity: availableStock,
       };
       setCart([...cart, newItem]);
     }
-    toast.success(`${product.name} added to cart`);
+    toast.success(`${product.name} ${addQuantity > 1 ? `(${addQuantity}x)` : ''} added to cart`);
+    
+    // On small screens, switch to cart view when item is added
+    if (isSmallScreen && cart.length === 0) {
+      setShowCartView(true);
+    }
   };
 
   const handleRemoveFromCart = (productId) => {
-    setCart(cart.filter(item => item.product_id !== productId));
+    const newCart = cart.filter(item => item.product_id !== productId);
+    setCart(newCart);
+    // On small screens, if cart becomes empty, show products view
+    if (isSmallScreen && newCart.length === 0) {
+      setShowCartView(false);
+    }
   };
 
   const handleUpdateQuantity = (productId, newQuantity) => {
@@ -137,15 +227,63 @@ function Sales() {
       handleRemoveFromCart(productId);
       return;
     }
+    
+    const cartItem = cart.find(item => item.product_id === productId);
+    if (!cartItem) return;
+    
+    const requestedQuantity = parseInt(newQuantity);
+    const availableStock = cartItem.stock_quantity || 0;
+    
+    // Validate against available stock
+    if (requestedQuantity > availableStock) {
+      toast.error(`Cannot set quantity to ${requestedQuantity}. Only ${availableStock} available in stock`);
+      // Reset to maximum available stock
+      setCart(cart.map(item =>
+        item.product_id === productId
+          ? { ...item, quantity: availableStock, subtotal: availableStock * item.unit_price }
+          : item
+      ));
+      return;
+    }
+    
     setCart(cart.map(item =>
       item.product_id === productId
-        ? { ...item, quantity: parseInt(newQuantity), subtotal: parseInt(newQuantity) * item.unit_price }
+        ? { ...item, quantity: requestedQuantity, subtotal: requestedQuantity * item.unit_price }
         : item
     ));
   };
 
   const calculateTotal = () => {
     return cart.reduce((sum, item) => sum + item.subtotal, 0);
+  };
+
+  const calculateTotalItems = () => {
+    return cart.reduce((sum, item) => sum + parseInt(item.quantity || 0), 0);
+  };
+
+  const loadUncompletedOrders = async () => {
+    try {
+      // Load all orders
+      const response = await orderService.getAllOrders();
+      const allOrders = response.orders || response.data || [];
+      
+      // Filter for uncompleted orders only (pending, processing)
+      const uncompleted = allOrders.filter(order => 
+        order.status === 'pending' || order.status === 'processing'
+      );
+      
+      // Sort by date, most recent first
+      uncompleted.sort((a, b) => {
+        const dateA = new Date(a.order_date || a.created_at);
+        const dateB = new Date(b.order_date || b.created_at);
+        return dateB - dateA;
+      });
+      
+      setUncompletedOrders(uncompleted);
+    } catch (error) {
+      console.error('Failed to load uncompleted orders:', error);
+      setUncompletedOrders([]);
+    }
   };
 
   const loadCompletedSales = async () => {
@@ -195,10 +333,35 @@ function Sales() {
       return;
     }
 
+    // Customer is now mandatory
+    if (!selectedCustomer) {
+      toast.error('Please select a customer to complete the sale');
+      return;
+    }
+
+    // Validate stock availability before completing sale
+    const stockErrors = [];
+    for (const item of cart) {
+      const product = products.find(p => p.id === item.product_id);
+      if (product) {
+        const availableStock = parseInt(product.stock_quantity) || 0;
+        if (item.quantity > availableStock) {
+          stockErrors.push(`${item.product_name}: Requested ${item.quantity}, but only ${availableStock} available`);
+        }
+      }
+    }
+    
+    if (stockErrors.length > 0) {
+      toast.error(`Stock validation failed: ${stockErrors.join('; ')}`);
+      // Reload products to get latest stock
+      await loadProducts();
+      return;
+    }
+
     setProcessing(true);
     try {
       const orderData = {
-        customer_id: selectedCustomer || undefined,
+        customer_id: selectedCustomer,
         payment_method: paymentMethod,
         items: cart.map(item => ({
           product_id: item.product_id,
@@ -217,6 +380,8 @@ function Sales() {
         await orderService.completeOrder(order.id);
       } catch (error) {
         console.error('Failed to complete order:', error);
+        // Don't show error toast here - order was created successfully
+        // Completion failure is not critical
       }
 
       // Automatically generate receipt
@@ -229,6 +394,7 @@ function Sales() {
         toast.success('Sale completed and receipt generated successfully!');
       } catch (error) {
         console.error('Failed to generate receipt:', error);
+        // Order was created successfully, receipt generation is optional
         toast.success('Sale completed! Receipt generation failed. You can generate it later.');
       }
       
@@ -237,16 +403,34 @@ function Sales() {
       setSelectedCustomer('');
       setPaymentMethod('cash');
       setSearchTerm('');
+      setShowCartView(false); // Reset cart view on small screens
       
-      // Reload completed sales to show the new sale
+      // Reload orders and sales
+      await loadUncompletedOrders();
       await loadCompletedSales();
       
-      // Switch to history tab to show the new sale
-      setActiveTab('history');
+      // Switch to orders tab to show the new order
+      setActiveTab('orders');
       
     } catch (error) {
       console.error('Failed to complete sale:', error);
-      toast.error(error.response?.data?.error || 'Failed to complete sale');
+      
+      // Handle different error types with more specific messages
+      if (error.response?.status === 403) {
+        toast.error('You do not have permission to create orders. Please contact your administrator.');
+      } else if (error.response?.status === 401) {
+        toast.error('Your session has expired. Please log in again.');
+      } else if (error.response?.status === 400) {
+        toast.error(error.response?.data?.error || error.response?.data?.message || 'Invalid order data. Please check your input.');
+      } else if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else if (error.message) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to complete sale. Please try again.');
+      }
     } finally {
       setProcessing(false);
     }
@@ -400,10 +584,15 @@ function Sales() {
     }
   };
 
-  const filteredProducts = products.filter((product) =>
-    product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter((product) => {
+    // Exclude products with zero stock
+    if ((product.stock_quantity || 0) === 0) {
+      return false;
+    }
+    // Filter by search term
+    return product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           product.sku?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (loading) {
     return (
@@ -415,23 +604,69 @@ function Sales() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Sales</Typography>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Sales
+          </Typography>
+        </Box>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2, 
+          alignItems: { xs: 'stretch', sm: 'center' },
+          width: { xs: '100%', sm: 'auto' }
+        }}>
           {activeTab === 'pos' && (
             <Chip
               icon={<ShoppingCart />}
-              label={`${cart.length} item${cart.length !== 1 ? 's' : ''} in cart`}
+              label={`${calculateTotalItems()} item${calculateTotalItems() !== 1 ? 's' : ''} in cart`}
               color="primary"
               variant="outlined"
+              sx={{ 
+                alignSelf: { xs: 'flex-start', sm: 'center' },
+                height: { xs: '32px', sm: '36.5px' },
+                '& .MuiChip-label': {
+                  px: { xs: 1, sm: 1.5 }
+                }
+              }}
             />
           )}
           <Button
             variant={activeTab === 'pos' ? 'contained' : 'outlined'}
-            onClick={() => setActiveTab('pos')}
+            onClick={() => {
+              setActiveTab('pos');
+              // Reset cart view when switching to POS tab
+              if (isSmallScreen) {
+                setShowCartView(cart.length > 0);
+              }
+            }}
             startIcon={<PointOfSale />}
+            size={isSmallScreen ? 'small' : 'medium'}
+            fullWidth={isSmallScreen}
+            sx={{ height: { xs: '32px', sm: '36.5px' } }}
           >
             Point of Sale
+          </Button>
+          <Button
+            variant={activeTab === 'orders' ? 'contained' : 'outlined'}
+            onClick={() => {
+              setActiveTab('orders');
+              loadUncompletedOrders();
+            }}
+            startIcon={<OrderIcon />}
+            size={isSmallScreen ? 'small' : 'medium'}
+            fullWidth={isSmallScreen}
+            sx={{ height: { xs: '32px', sm: '36.5px' } }}
+          >
+            Orders ({uncompletedOrders.length})
           </Button>
           <Button
             variant={activeTab === 'history' ? 'contained' : 'outlined'}
@@ -440,6 +675,9 @@ function Sales() {
               loadCompletedSales();
             }}
             startIcon={<Receipt />}
+            size={isSmallScreen ? 'small' : 'medium'}
+            fullWidth={isSmallScreen}
+            sx={{ height: { xs: '32px', sm: '36.5px' } }}
           >
             Sales History
           </Button>
@@ -448,93 +686,153 @@ function Sales() {
 
       {activeTab === 'pos' ? (
         <Grid container spacing={3}>
-          {/* Products Section */}
-          <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <TextField
-              fullWidth
-              placeholder="Search products by name or SKU..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Paper>
-
-          <Paper sx={{ p: 2, maxHeight: '60vh', overflow: 'auto' }}>
-            <Typography variant="h6" gutterBottom>
-              Products
-            </Typography>
-            {filteredProducts.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <PointOfSale sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="body1" color="text.secondary">
-                  {searchTerm ? 'No products found' : 'No products available'}
-                </Typography>
-              </Box>
-            ) : (
-              <Grid container spacing={2}>
-                {filteredProducts.map((product) => (
-                  <Grid item xs={12} sm={6} md={4} key={product.id}>
-                    <Card
-                      sx={{
-                        cursor: 'pointer',
-                        '&:hover': {
-                          boxShadow: 4,
-                          transform: 'translateY(-2px)',
-                          transition: 'all 0.2s',
-                        },
-                      }}
-                      onClick={() => handleAddToCart(product)}
+          {/* Products Section - Hidden on small screens when cart has items */}
+          {(!isSmallScreen || !showCartView || cart.length === 0) && (
+            <Grid item xs={12} md={8}>
+              <Paper sx={{ p: 2, mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  {isSmallScreen && showCartView && cart.length > 0 && (
+                    <IconButton
+                      onClick={() => setShowCartView(false)}
+                      color="primary"
+                      aria-label="back to products"
                     >
-                      <CardContent>
-                        <Typography variant="h6" noWrap>
-                          {product.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          SKU: {product.sku || 'N/A'}
-                        </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                          <Typography variant="h6" color="primary">
-                            {formatCurrency(product.price || 0, currency)}
-                          </Typography>
-                          <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<Add />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddToCart(product);
-                            }}
-                          >
-                            Add
-                          </Button>
-                        </Box>
-                        {product.stock_quantity !== undefined && (
-                          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                            Stock: {product.stock_quantity || 0}
-                          </Typography>
-                        )}
-                      </CardContent>
-                    </Card>
+                      <ArrowBack />
+                    </IconButton>
+                  )}
+                  <TextField
+                    fullWidth
+                    placeholder="Search products by name or SKU..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Paper>
+
+              <Paper sx={{ p: 2, maxHeight: '60vh', overflow: 'auto' }}>
+                <Typography variant="h6" gutterBottom>
+                  Products
+                </Typography>
+                {filteredProducts.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <PointOfSale sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="body1" color="text.secondary">
+                      {searchTerm ? 'No products found' : 'No products available'}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Grid container spacing={2}>
+                    {filteredProducts.map((product) => (
+                      <Grid item xs={12} sm={6} md={4} key={product.id}>
+                        <Card
+                          sx={{
+                            cursor: 'pointer',
+                            '&:hover': {
+                              boxShadow: 4,
+                              transform: 'translateY(-2px)',
+                              transition: 'all 0.2s',
+                            },
+                          }}
+                          onClick={() => handleAddToCart(product)}
+                        >
+                          <CardContent>
+                            <Typography variant="h6" noWrap>
+                              {product.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              SKU: {product.sku || 'N/A'}
+                            </Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                              <Typography variant="h6" color="primary">
+                                {formatCurrency(product.price || 0, currency)}
+                              </Typography>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                startIcon={<Add />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddToCart(product);
+                                }}
+                              >
+                                Add
+                              </Button>
+                            </Box>
+                            {product.stock_quantity !== undefined && (
+                              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                Stock: {product.stock_quantity || 0}
+                              </Typography>
+                            )}
+                            {/* Order History */}
+                            {productOrderHistory[product.id] && productOrderHistory[product.id].length > 0 && (
+                              <Box sx={{ mt: 1.5, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                  Recent Orders:
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                  {productOrderHistory[product.id].slice(0, 3).map((order, idx) => (
+                                    <Chip
+                                      key={idx}
+                                      label={order.order_number}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{
+                                        fontSize: '0.65rem',
+                                        height: '20px',
+                                        cursor: 'pointer',
+                                        '&:hover': {
+                                          backgroundColor: 'primary.light',
+                                          color: 'primary.contrastText',
+                                          borderColor: 'primary.main'
+                                        }
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // Add product with the same quantity from that order
+                                        const orderQuantity = order.quantity || 1;
+                                        handleAddToCart(product, orderQuantity);
+                                      }}
+                                      title={`Order ${order.order_number} - Qty: ${order.quantity} - ${order.customer_name}`}
+                                    />
+                                  ))}
+                                </Box>
+                              </Box>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
                   </Grid>
-                ))}
-              </Grid>
-            )}
-          </Paper>
-        </Grid>
+                )}
+              </Paper>
+            </Grid>
+          )}
 
         {/* Cart Section */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, position: 'sticky', top: 80 }}>
-            <Typography variant="h6" gutterBottom>
-              Cart
-            </Typography>
+        <Grid item xs={12} md={isSmallScreen && showCartView && cart.length > 0 ? 12 : 4}>
+          <Paper sx={{ p: 3, position: { md: 'sticky' }, top: { md: 80 } }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">
+                Cart
+              </Typography>
+              {isSmallScreen && showCartView && cart.length > 0 && (
+                <IconButton
+                  onClick={() => setShowCartView(false)}
+                  color="inherit"
+                  aria-label="back to products"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
             <Divider sx={{ my: 2 }} />
 
             {cart.length === 0 ? (
@@ -543,6 +841,17 @@ function Sales() {
                 <Typography variant="body2" color="text.secondary">
                   Cart is empty
                 </Typography>
+                {isSmallScreen && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<ArrowBack />}
+                    onClick={() => setShowCartView(false)}
+                    sx={{ mt: 2 }}
+                    fullWidth
+                  >
+                    Back to Products
+                  </Button>
+                )}
               </Box>
             ) : (
               <>
@@ -563,8 +872,17 @@ function Sales() {
                           <TableCell>
                             <Typography variant="body2">{item.product_name}</Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {item.product_sku}
+                              {item.product_sku ? `SKU: ${item.product_sku}` : 'SKU: N/A'}
                             </Typography>
+                            {item.stock_quantity !== undefined && (
+                              <Typography 
+                                variant="caption" 
+                                color={item.quantity > item.stock_quantity ? 'error' : 'text.secondary'}
+                                sx={{ display: 'block', mt: 0.5 }}
+                              >
+                                Stock: {item.stock_quantity} | Cart: {item.quantity}
+                              </Typography>
+                            )}
                           </TableCell>
                           <TableCell align="right">
                             <TextField
@@ -572,8 +890,14 @@ function Sales() {
                               size="small"
                               value={item.quantity}
                               onChange={(e) => handleUpdateQuantity(item.product_id, e.target.value)}
-                              inputProps={{ min: 1, style: { textAlign: 'center', width: '50px' } }}
+                              inputProps={{ 
+                                min: 1, 
+                                max: item.stock_quantity || 999999,
+                                style: { textAlign: 'center', width: '50px' } 
+                              }}
                               sx={{ width: '70px' }}
+                              error={item.quantity > (item.stock_quantity || 0)}
+                              helperText={item.stock_quantity !== undefined ? `Max: ${item.stock_quantity}` : ''}
                             />
                           </TableCell>
                           <TableCell align="right">
@@ -600,15 +924,17 @@ function Sales() {
                 <Divider sx={{ my: 2 }} />
 
                 <Box sx={{ mb: 3 }}>
-                  <FormControl fullWidth sx={{ mb: 2 }}>
-                    <InputLabel>Customer (Optional)</InputLabel>
+                  <FormControl fullWidth sx={{ mb: 2 }} required>
+                    <InputLabel>Customer *</InputLabel>
                     <Select
                       value={selectedCustomer}
-                      label="Customer (Optional)"
+                      label="Customer *"
                       onChange={(e) => setSelectedCustomer(e.target.value)}
+                      required
+                      error={!selectedCustomer && cart.length > 0}
                     >
                       <MenuItem value="">
-                        <em>Walk-in Customer</em>
+                        <em>Select Customer</em>
                       </MenuItem>
                       {customers.map((customer) => (
                         <MenuItem key={customer.id} value={customer.id}>
@@ -616,6 +942,11 @@ function Sales() {
                         </MenuItem>
                       ))}
                     </Select>
+                    {!selectedCustomer && cart.length > 0 && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                        Customer selection is required to complete sale
+                      </Typography>
+                    )}
                   </FormControl>
 
                   <FormControl fullWidth sx={{ mb: 2 }}>
@@ -636,21 +967,40 @@ function Sales() {
 
                 <Divider sx={{ my: 2 }} />
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                  <Typography variant="h6">Total:</Typography>
-                  <Typography variant="h6" color="primary">
-                    {formatCurrency(calculateTotal(), currency)}
-                  </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body1" color="text.secondary">Total Items:</Typography>
+                    <Typography variant="body1" fontWeight="bold">
+                      {calculateTotalItems()}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                    <Typography variant="h6">Total Cost:</Typography>
+                    <Typography variant="h6" color="primary" fontWeight="bold">
+                      {formatCurrency(calculateTotal(), currency)}
+                    </Typography>
+                  </Box>
                 </Box>
 
+                {isSmallScreen && (
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<ArrowBack />}
+                    onClick={() => setShowCartView(false)}
+                    sx={{ mb: 2, py: 1.5 }}
+                  >
+                    Back to Products
+                  </Button>
+                )}
                 <Button
                   fullWidth
                   variant="contained"
-                  size="large"
+                  size={isSmallScreen ? 'medium' : 'large'}
                   startIcon={<Payment />}
                   onClick={handleCompleteSale}
-                  disabled={processing || cart.length === 0}
-                  sx={{ py: 1.5 }}
+                  disabled={processing || cart.length === 0 || !selectedCustomer}
+                  sx={{ py: { xs: 1.25, sm: 1.5 } }}
                 >
                   {processing ? 'Processing...' : 'Complete Sale'}
                 </Button>
@@ -659,6 +1009,121 @@ function Sales() {
           </Paper>
         </Grid>
       </Grid>
+      ) : activeTab === 'orders' ? (
+        /* Uncompleted Orders Section */
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Uncompleted Orders
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Orders that are pending or in processing
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+
+          {loadingSales ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : uncompletedOrders.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <OrderIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="body1" color="text.secondary">
+                No uncompleted orders
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                All orders have been completed
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Order Number</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Date & Time</TableCell>
+                    <TableCell>Items</TableCell>
+                    <TableCell>Amount</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {uncompletedOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>{order.order_number || `#${order.id}`}</TableCell>
+                      <TableCell>
+                        {order.customer?.name || 
+                         (order.customer ? `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim() : 'Walk-in Customer') || 
+                         'Walk-in Customer'}
+                      </TableCell>
+                      <TableCell>
+                        {order.order_date || order.created_at ? (
+                          <Box>
+                            <Typography variant="body2">
+                              {new Date(order.order_date || order.created_at).toLocaleDateString()}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(order.order_date || order.created_at).toLocaleTimeString()}
+                            </Typography>
+                          </Box>
+                        ) : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {order.items && order.items.length > 0 ? (
+                          <Box>
+                            {order.items.slice(0, 2).map((item, idx) => (
+                              <Typography key={idx} variant="caption" display="block">
+                                {item.product?.name || item.description || 'Product'}
+                                {item.product?.sku && ` (SKU: ${item.product.sku})`}
+                                {item.quantity > 1 && ` x${item.quantity}`}
+                              </Typography>
+                            ))}
+                            {order.items.length > 2 && (
+                              <Typography variant="caption" color="text.secondary">
+                                +{order.items.length - 2} more
+                              </Typography>
+                            )}
+                          </Box>
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">No items</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(order.total_amount || 0, currency)}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={order.status || 'pending'}
+                          size="small"
+                          color={order.status === 'processing' ? 'warning' : 'default'}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={async () => {
+                            try {
+                              await orderService.completeOrder(order.id);
+                              toast.success('Order completed successfully');
+                              await loadUncompletedOrders();
+                              await loadCompletedSales();
+                            } catch (error) {
+                              toast.error(error.response?.data?.error || 'Failed to complete order');
+                            }
+                          }}
+                        >
+                          Complete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Paper>
       ) : (
         /* Sales History Section */
         <Paper sx={{ p: 3 }}>
@@ -684,30 +1149,51 @@ function Sales() {
           ) : (
             <TableContainer>
               <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Order Number</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Amount</TableCell>
-                    <TableCell>Payment Method</TableCell>
-                    <TableCell>Receipt</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {completedSales.map((sale) => (
-                    <TableRow key={sale.id}>
-                      <TableCell>{sale.order_number || `#${sale.id}`}</TableCell>
-                      <TableCell>
-                        {sale.customer?.name || 
-                         (sale.customer ? `${sale.customer.first_name || ''} ${sale.customer.last_name || ''}`.trim() : 'Walk-in') || 
-                         'Walk-in'}
-                      </TableCell>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Order Number</TableCell>
+                        <TableCell>Customer</TableCell>
+                        <TableCell>Date</TableCell>
+                        <TableCell>Items</TableCell>
+                        <TableCell>Amount</TableCell>
+                        <TableCell>Payment Method</TableCell>
+                        <TableCell>Receipt</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {completedSales.map((sale) => (
+                        <TableRow key={sale.id}>
+                          <TableCell>{sale.order_number || `#${sale.id}`}</TableCell>
+                          <TableCell>
+                            {sale.customer?.name || 
+                             (sale.customer ? `${sale.customer.first_name || ''} ${sale.customer.last_name || ''}`.trim() : 'Walk-in Customer') || 
+                             'Walk-in Customer'}
+                          </TableCell>
                       <TableCell>
                         {sale.order_date 
                           ? new Date(sale.order_date).toLocaleString() 
                           : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {sale.items && sale.items.length > 0 ? (
+                          <Box>
+                            {sale.items.slice(0, 2).map((item, idx) => (
+                              <Typography key={idx} variant="caption" display="block">
+                                {item.product?.name || item.description || 'Product'}
+                                {item.product?.sku && ` (SKU: ${item.product.sku})`}
+                                {item.quantity > 1 && ` x${item.quantity}`}
+                              </Typography>
+                            ))}
+                            {sale.items.length > 2 && (
+                              <Typography variant="caption" color="text.secondary">
+                                +{sale.items.length - 2} more
+                              </Typography>
+                            )}
+                          </Box>
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">No items</Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         {formatCurrency(sale.total_amount || 0, currency)}
@@ -744,16 +1230,18 @@ function Sales() {
                               color="primary"
                               onClick={() => handlePrintReceipt(sale.receipt.id, sale.id)}
                               title="Print Receipt"
+                              sx={{ padding: { xs: '4px', sm: '8px' } }}
                             >
-                              <Print />
+                              <Print fontSize="small" />
                             </IconButton>
                             <IconButton
                               size="small"
                               color="primary"
                               onClick={() => handleDownloadReceipt(sale.receipt.id, sale.receipt.receipt_number, sale.id)}
                               title="Download Receipt"
+                              sx={{ padding: { xs: '4px', sm: '8px' } }}
                             >
-                              <GetApp />
+                              <GetApp fontSize="small" />
                             </IconButton>
                           </>
                         ) : (

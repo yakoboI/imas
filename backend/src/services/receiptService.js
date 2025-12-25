@@ -46,6 +46,11 @@ class ReceiptService {
       throw new Error('Order not found');
     }
 
+    // Validate that order is completed before generating receipt
+    if (order.status !== 'completed') {
+      throw new Error(`Cannot generate receipt for order with status '${order.status}'. Order must be completed first.`);
+    }
+
     // Check if receipt already exists
     let receipt = await Receipt.findOne({
       where: { order_id: orderId, tenant_id: tenantId }
@@ -100,11 +105,15 @@ class ReceiptService {
 
     // Create receipt items
     for (const orderItem of order.items) {
+      const productName = orderItem.product?.name || 'Product';
+      const productSku = orderItem.product?.sku || '';
+      const description = productSku ? `${productName} (SKU: ${productSku})` : productName;
+      
       await ReceiptItem.create({
         tenant_id: tenantId,
         receipt_id: receipt.id,
         product_id: orderItem.product_id,
-        description: orderItem.product?.name || 'Product',
+        description: description,
         quantity: orderItem.quantity,
         unit_price: orderItem.unit_price,
         subtotal: orderItem.subtotal,
@@ -169,9 +178,11 @@ class ReceiptService {
     const template = getReceiptTemplate(templateType);
 
     // Prepare data for template
+
     const templateData = {
       receipt: {
         number: fullReceipt.receipt_number,
+        orderNumber: fullReceipt.order?.order_number || 'N/A',
         date: fullReceipt.issue_date ? new Date(fullReceipt.issue_date).toLocaleDateString() : new Date().toLocaleDateString(),
         time: fullReceipt.issue_date ? new Date(fullReceipt.issue_date).toLocaleTimeString() : new Date().toLocaleTimeString(),
         total: fullReceipt.total_amount || 0,
@@ -181,26 +192,33 @@ class ReceiptService {
         paymentMethod: fullReceipt.payment_method || 'cash'
       },
       company: {
-        name: fullReceipt.tenant.name || 'Company',
-        address: fullReceipt.tenant.company_address || '',
-        phone: fullReceipt.tenant.company_phone || '',
-        email: fullReceipt.tenant.company_email || '',
-        logo: fullReceipt.tenant.company_logo_url || '',
-        taxId: fullReceipt.tenant.tax_id || ''
+        name: fullReceipt.tenant.company_name || fullReceipt.tenant.name || 'Company',
+        address: fullReceipt.tenant.company_address || null,
+        phone: fullReceipt.tenant.company_phone || null,
+        email: fullReceipt.tenant.company_email || null,
+        logo: fullReceipt.tenant.company_logo_url || null,
+        taxId: fullReceipt.tenant.tax_id || null,
+        website: fullReceipt.tenant.settings?.website || null
       },
       customer: fullReceipt.customer ? {
         name: fullReceipt.customer.name || 'Customer',
         email: fullReceipt.customer.email || '',
         phone: fullReceipt.customer.phone || '',
         address: fullReceipt.customer.address || ''
-      } : null,
-      items: (fullReceipt.items && Array.isArray(fullReceipt.items)) ? fullReceipt.items.map(item => ({
-        description: item.description || 'Product',
-        quantity: item.quantity || 0,
-        unitPrice: item.unit_price || 0,
-        subtotal: item.subtotal || 0,
-        tax: item.tax_amount || 0
-      })) : []
+      } : { name: 'Walk-in Customer' }, // Always show customer, even if walk-in
+      items: (fullReceipt.items && Array.isArray(fullReceipt.items)) ? fullReceipt.items.map(item => {
+        // Extract SKU from description if it exists, or get from product
+        const productSku = item.product?.sku || '';
+        const description = item.description || 'Product';
+        return {
+          description: description,
+          sku: productSku,
+          quantity: item.quantity || 0,
+          unitPrice: item.unit_price || 0,
+          subtotal: item.subtotal || 0,
+          tax: item.tax_amount || 0
+        };
+      }) : []
     };
 
     // Compile template
@@ -286,7 +304,7 @@ class ReceiptService {
 
   // Get receipt by ID
   static async getReceipt(receiptId, tenantId) {
-    return await Receipt.findOne({
+    const receipt = await Receipt.findOne({
       where: { id: receiptId, tenant_id: tenantId },
       include: [
         { model: ReceiptItem, as: 'items', include: [{ model: Product, as: 'product' }] },
@@ -295,6 +313,19 @@ class ReceiptService {
         { model: Tenant, as: 'tenant' }
       ]
     });
+
+    if (!receipt) {
+      return null;
+    }
+
+    // Map receipt to include flat fields for frontend compatibility
+    const receiptData = receipt.toJSON ? receipt.toJSON() : receipt;
+    return {
+      ...receiptData,
+      order_number: receiptData.order?.order_number || null,
+      customer_name: receiptData.customer?.name || 'Walk-in Customer',
+      order_id: receiptData.order_id || receiptData.order?.id || null
+    };
   }
 
   // List receipts
@@ -325,15 +356,27 @@ class ReceiptService {
     const { count, rows } = await Receipt.findAndCountAll({
       where,
       include: [
-        { model: Customer, as: 'customer', attributes: ['id', 'name', 'email'] }
+        { model: Customer, as: 'customer', attributes: ['id', 'name', 'email'], required: false },
+        { model: Order, as: 'order', attributes: ['id', 'order_number'], required: false }
       ],
       order: [['issue_date', 'DESC']],
       limit,
       offset
     });
 
+    // Map receipts to include flat fields for frontend compatibility
+    const mappedReceipts = rows.map(receipt => {
+      const receiptData = receipt.toJSON ? receipt.toJSON() : receipt;
+      return {
+        ...receiptData,
+        order_number: receiptData.order?.order_number || null,
+        customer_name: receiptData.customer?.name || 'Walk-in Customer',
+        order_id: receiptData.order_id || receiptData.order?.id || null
+      };
+    });
+
     return {
-      receipts: rows,
+      receipts: mappedReceipts,
       pagination: {
         total: count,
         page,

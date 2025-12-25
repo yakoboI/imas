@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const SuperAdminController = require('../controllers/superAdminController');
+const { SuperAdminController, upload } = require('../controllers/superAdminController');
 const { authenticate, superAdminOnly } = require('../middleware/auth');
 
 // SuperAdmin authentication
@@ -46,6 +46,9 @@ router.get('/system/health', SuperAdminController.getSystemHealth);
 router.post('/system/backup', SuperAdminController.triggerBackup);
 router.get('/system/settings', SuperAdminController.getSystemSettings);
 router.put('/system/settings', SuperAdminController.updateSystemSettings);
+
+// Profile management
+router.put('/profile/avatar', upload.single('avatar'), SuperAdminController.uploadAvatar);
 
 module.exports = router;
 

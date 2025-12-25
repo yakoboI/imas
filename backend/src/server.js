@@ -7,6 +7,9 @@ const { sequelize } = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const requestLogger = require('./middleware/logging');
 const { apiLimiter } = require('./middleware/rateLimiter');
+const checkMaintenanceMode = require('./middleware/maintenanceMode');
+const backupScheduler = require('./services/backupScheduler');
+const digestScheduler = require('./services/digestScheduler');
 
 // Load models and set up associations
 require('./models/index');
@@ -27,6 +30,7 @@ const inventoryRoutes = require('./routes/inventory.routes');
 const orderRoutes = require('./routes/order.routes');
 const superadminRoutes = require('./routes/superadmin.routes');
 const tenantSettingsRoutes = require('./routes/tenantSettings.routes');
+const notificationRoutes = require('./routes/notification.routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -91,6 +95,8 @@ app.get('/health', async (req, res) => {
 // API Routes
 // IMPORTANT: Specific routes must come before generic routes (like /:id)
 app.use('/api/auth', authRoutes);
+// Apply maintenance mode check to all authenticated routes (except auth routes)
+app.use('/api', checkMaintenanceMode);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/customers', customerRoutes);
@@ -104,6 +110,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/tenant-settings', tenantSettingsRoutes);
+app.use('/api/notifications', notificationRoutes);
 // Profile routes - routes have /profile prefix, mount at /api (must be last to avoid conflicts)
 app.use('/api', userRoutes);
 
@@ -123,13 +130,20 @@ const startServer = async () => {
 
     // Sync database (in production, use migrations instead)
     if (process.env.NODE_ENV === 'development') {
-      // await sequelize.sync({ alter: true });
       console.log('⚠️  Database sync disabled. Use migrations in production.');
     }
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+      
+      // Start backup scheduler
+      backupScheduler.start();
+      console.log('✅ Backup scheduler started');
+      
+      // Start digest scheduler
+      digestScheduler.start();
+      console.log('✅ Daily digest scheduler started');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

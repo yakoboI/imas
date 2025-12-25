@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const SystemSettingsService = require('./systemSettingsService');
 require('dotenv').config();
 
 // Create transporter
@@ -13,9 +14,33 @@ const transporter = nodemailer.createTransport({
 });
 
 class EmailService {
-  // Send email
-  static async sendEmail({ to, subject, html, text, attachments = [] }) {
+  // Check if email notifications are enabled
+  static async areNotificationsEnabled() {
     try {
+      const settings = await SystemSettingsService.getSettings();
+      return settings.emailNotifications !== false; // Default to true if not set
+    } catch (error) {
+      console.error('Error checking email notifications setting:', error);
+      return true; // Default to enabled on error
+    }
+  }
+
+  // Send email (checks notification settings unless forceSend is true)
+  static async sendEmail({ to, subject, html, text, attachments = [], forceSend = false }) {
+    try {
+      // Check if notifications are enabled (unless forceSend is true for critical emails)
+      if (!forceSend) {
+        const notificationsEnabled = await this.areNotificationsEnabled();
+        if (!notificationsEnabled) {
+          console.log(`Email notifications disabled. Skipping email to ${to}: ${subject}`);
+          return {
+            success: true,
+            skipped: true,
+            message: 'Email notifications are disabled'
+          };
+        }
+      }
+
       const info = await transporter.sendMail({
         from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
         to,
@@ -50,7 +75,7 @@ class EmailService {
     });
   }
 
-  // Send password reset email
+  // Send password reset email (forceSend = true for critical security emails)
   static async sendPasswordResetEmail(email, resetToken) {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
     
@@ -65,7 +90,8 @@ class EmailService {
     return await this.sendEmail({
       to: email,
       subject: 'Password Reset Request',
-      html
+      html,
+      forceSend: true // Always send password reset emails (security critical)
     });
   }
 

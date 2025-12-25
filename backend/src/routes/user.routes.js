@@ -16,6 +16,7 @@ router.put('/profile/notifications', authenticate, tenantResolver, UserControlle
 
 // User management routes (Admin only)
 // These will be available under /api/users/... because this router is mounted at /api
+router.get('/users/tenant-info', authenticate, tenantResolver, authorize('admin'), UserController.getTenantInfo);
 router.get('/users', authenticate, tenantResolver, authorize('admin'), UserController.getAllUsers);
 router.post('/users', authenticate, tenantResolver, authorize('admin'), UserController.createUser);
 router.get('/users/:id', authenticate, tenantResolver, authorize('admin'), UserController.getUserById);

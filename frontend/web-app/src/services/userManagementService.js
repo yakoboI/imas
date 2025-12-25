@@ -1,6 +1,11 @@
 import api from './api';
 
 const userManagementService = {
+  getTenantInfo: async () => {
+    const response = await api.get('/users/tenant-info');
+    return response.data;
+  },
+
   getAllUsers: async (filters = {}) => {
     const response = await api.get('/users', { params: filters });
     return response.data;

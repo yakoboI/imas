@@ -56,9 +56,23 @@ function UserList() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        All Users
-      </Typography>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            All Users
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            View and manage all users across all tenants
+          </Typography>
+        </Box>
+      </Box>
 
       <TextField
         fullWidth
@@ -66,6 +80,7 @@ function UserList() {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         sx={{ mb: 3, mt: 2 }}
+        size="small"
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -76,28 +91,28 @@ function UserList() {
       />
 
       <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-        <Table>
+        <Table sx={{ minWidth: { xs: 600, sm: 'auto' } }}>
           <TableHead>
             <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Tenant</TableCell>
-              <TableCell>Role</TableCell>
-              <TableCell>Status</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Name</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>Email</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Tenant</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Role</TableCell>
+              <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredUsers.map((user) => (
               <TableRow key={user.id}>
-                <TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   {user.first_name} {user.last_name}
                 </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.tenant?.name || 'N/A'}</TableCell>
-                <TableCell>
-                  <Chip label={user.role} size="small" />
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>{user.email}</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{user.tenant?.name || 'N/A'}</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  <Chip label={user.role} size="small" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }} />
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                   <Chip
                     label={user.status}
                     size="small"

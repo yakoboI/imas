@@ -64,9 +64,27 @@ class WarehouseController {
     try {
       const tenantId = req.tenantId;
       const { name, location, address, manager_id } = req.body;
+      const Tenant = require('../models/Tenant');
 
       if (!name) {
         return res.status(400).json({ error: 'Warehouse name is required' });
+      }
+
+      // Check tenant's warehouse limit
+      const tenant = await Tenant.findByPk(tenantId);
+      if (!tenant) {
+        return res.status(404).json({ error: 'Tenant not found' });
+      }
+
+      const currentWarehouseCount = await Warehouse.count({ 
+        where: { tenant_id: tenantId, status: 'active' } 
+      });
+      
+      if (currentWarehouseCount >= tenant.max_warehouses) {
+        return res.status(403).json({
+          error: 'Warehouse limit reached',
+          message: `This tenant is limited to ${tenant.max_warehouses} warehouse${tenant.max_warehouses === 1 ? '' : 's'}. Please upgrade your plan or deactivate existing warehouses.`
+        });
       }
 
       const warehouse = await Warehouse.create({

@@ -79,38 +79,40 @@ function Dashboard() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
-      <Typography variant="body1" color="text.secondary" gutterBottom>
-        Platform overview and statistics
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+          Dashboard
+        </Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          Platform overview and statistics
+        </Typography>
+      </Box>
 
-      <Grid container spacing={3} sx={{ mt: 2 }}>
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mt: 2 }}>
         {statCards.map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Paper
               elevation={2}
               sx={{
-                p: 2.5,
+                p: { xs: 2, sm: 2.5 },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
                 height: '100%',
-                minHeight: 120,
+                minHeight: { xs: 100, sm: 120 },
                 transition: 'transform 0.2s, box-shadow 0.2s',
                 '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: 4,
+                  transform: { xs: 'none', sm: 'translateY(-4px)' },
+                  boxShadow: { xs: 2, sm: 4 },
                 },
               }}
             >
               <Box
                 sx={{
-                  width: 48,
-                  height: 48,
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 },
                   borderRadius: 1.5,
                   backgroundColor: `${stat.color}20`,
                   display: 'flex',
@@ -120,13 +122,13 @@ function Dashboard() {
                   mb: 1.5,
                 }}
               >
-                {React.cloneElement(stat.icon, { sx: { fontSize: 24 } })}
+                {React.cloneElement(stat.icon, { sx: { fontSize: { xs: 20, sm: 24 } } })}
               </Box>
               <Box>
                 <Typography 
                   fontWeight="bold"
                   sx={{ 
-                    fontSize: '1.5rem',
+                    fontSize: { xs: '1.25rem', sm: '1.5rem' },
                     lineHeight: 1.2,
                     mb: 0.5,
                     color: stat.color,
@@ -138,7 +140,7 @@ function Dashboard() {
                   variant="body2" 
                   color="text.secondary"
                   sx={{
-                    fontSize: '0.875rem',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
                     lineHeight: 1.4,
                   }}
                 >

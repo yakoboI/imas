@@ -23,6 +23,9 @@ import {
   FormControl,
   InputLabel,
   Select,
+  useMediaQuery,
+  useTheme,
+  IconButton,
 } from '@mui/material';
 import {
   Add,
@@ -31,6 +34,7 @@ import {
   TrendingUp,
   TrendingDown,
   Remove,
+  Close,
 } from '@mui/icons-material';
 import inventoryService from '../services/inventoryService';
 import productService from '../services/productService';
@@ -39,6 +43,8 @@ import tenantSettingsService from '../services/tenantSettingsService';
 import { toast } from 'react-toastify';
 
 function Inventory() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [inventory, setInventory] = useState([]);
   const [products, setProducts] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -217,9 +223,29 @@ function Inventory() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Inventory</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleAdjustStock}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Inventory
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Track and manage product stock levels across warehouses
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          startIcon={<Add />} 
+          onClick={handleAdjustStock}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Adjust Stock
         </Button>
       </Box>
@@ -275,11 +301,11 @@ function Inventory() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Product</TableCell>
-                <TableCell>Warehouse</TableCell>
-                <TableCell>Quantity</TableCell>
-                <TableCell>Unit</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Product</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Warehouse</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Quantity</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>Unit</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -287,12 +313,12 @@ function Inventory() {
                 const status = getStockStatus(item.quantity);
                 return (
                   <TableRow key={item.id}>
-                    <TableCell>{item.product?.name || item.product_name || 'N/A'}</TableCell>
-                    <TableCell>{item.warehouse?.name || item.warehouse_name || 'N/A'}</TableCell>
-                    <TableCell>{item.quantity || 0}</TableCell>
-                    <TableCell>{item.unit || 'pcs'}</TableCell>
-                    <TableCell>
-                      <Chip label={status.label} size="small" color={status.color} />
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{item.product?.name || item.product_name || 'N/A'}</TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{item.warehouse?.name || item.warehouse_name || 'N/A'}</TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{item.quantity || 0}</TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>{item.unit || 'pcs'}</TableCell>
+                    <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      <Chip label={status.label} size="small" color={status.color} sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }} />
                     </TableCell>
                   </TableRow>
                 );
@@ -309,7 +335,22 @@ function Inventory() {
         fullWidth
       >
         <form onSubmit={handleAdjustSubmit}>
-          <DialogTitle>Adjust Stock</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Adjust Stock</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setAdjustDialog(false)}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -399,8 +440,19 @@ function Inventory() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAdjustDialog(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">Adjust Stock</Button>
+            <Button 
+              onClick={() => setAdjustDialog(false)}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Adjust Stock
+            </Button>
           </DialogActions>
         </form>
       </Dialog>

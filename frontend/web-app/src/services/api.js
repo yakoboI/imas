@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -32,6 +33,18 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+    }
+    if (error.response?.status === 503) {
+      // Service Unavailable - Maintenance mode
+      const message = error.response?.data?.message || 'The system is currently under maintenance. Please try again later.';
+      // Show maintenance message to user using toast
+      if (window.location.pathname !== '/login') {
+        // Only show if not already on login page
+        toast.error(message, {
+          autoClose: 10000, // Show for 10 seconds
+          position: 'top-center',
+        });
+      }
     }
     // Suppress 404 errors for unimplemented routes (expected during development)
     // They will be handled by individual services/components

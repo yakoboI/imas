@@ -14,8 +14,6 @@ class ProductController {
       }
 
       const { page = 1, limit = 50, search, category_id, status } = req.query;
-      
-      console.log('[ProductController] getAllProducts - tenantId:', tenantId, 'user:', req.user?.email);
 
       // Build where clause properly - collect all conditions
       const conditions = [];
@@ -53,8 +51,6 @@ class ProductController {
           : { [Op.and]: conditions };
 
       const offset = (page - 1) * limit;
-
-      console.log('[ProductController] Query where clause:', JSON.stringify(where, null, 2));
       
       const { count, rows: products } = await Product.findAndCountAll({
         where,
@@ -78,7 +74,6 @@ class ProductController {
       const stockSums = {};
       if (productIds.length > 0) {
         try {
-          console.log('[ProductController] getAllProducts - Calculating stock for', productIds.length, 'products');
           const stockResults = await Inventory.findAll({
             where: {
               tenant_id: tenantId,
@@ -92,18 +87,13 @@ class ProductController {
             raw: true
           });
 
-          console.log('[ProductController] getAllProducts - Stock query returned', stockResults.length, 'records');
           stockResults.forEach(result => {
             const stockValue = result.total_stock ? parseInt(result.total_stock) : 0;
             stockSums[result.product_id] = stockValue;
-            console.log(`[ProductController] getAllProducts - Product ID ${result.product_id}: stock = ${stockValue}`);
           });
         } catch (stockError) {
           console.error('[ProductController] getAllProducts - Error fetching stock:', stockError);
-          console.error('[ProductController] getAllProducts - Error stack:', stockError.stack);
         }
-      } else {
-        console.log('[ProductController] getAllProducts - No products to calculate stock for');
       }
 
       // Add stock_quantity to each product
@@ -113,8 +103,6 @@ class ProductController {
         productData.stock_quantity = stockValue;
         return productData;
       });
-
-      console.log('[ProductController] Found', count, 'products');
 
       res.json({
         products: rows,
@@ -206,15 +194,12 @@ class ProductController {
 
       // Create inventory record if stock_quantity and warehouse_id provided
       // Check if stock_quantity is a valid number > 0
-      console.log('[ProductController] createProduct - Received stock_quantity:', stock_quantity, 'warehouse_id:', warehouse_id);
-      console.log('[ProductController] createProduct - typeof stock_quantity:', typeof stock_quantity, 'typeof warehouse_id:', typeof warehouse_id);
       const stockQty = stock_quantity ? parseInt(stock_quantity) : 0;
       // warehouse_id is UUID (string), don't parse as integer
       const warehouseId = warehouse_id && warehouse_id.trim() !== '' ? warehouse_id.trim() : null;
       console.log('[ProductController] createProduct - Parsed stockQty:', stockQty, 'warehouseId (UUID):', warehouseId);
       
       if (stockQty > 0 && warehouseId) {
-        console.log('[ProductController] createProduct - Creating inventory record...');
         // Validate warehouse belongs to tenant
         const warehouse = await Warehouse.findOne({
           where: { id: warehouseId, tenant_id: tenantId }
@@ -222,10 +207,7 @@ class ProductController {
 
         if (!warehouse) {
           console.error('[ProductController] createProduct - Warehouse not found. ID:', warehouseId, 'Tenant:', tenantId);
-          // Don't return error, just log and continue (non-blocking)
-          console.warn('[ProductController] createProduct - Continuing without inventory creation');
         } else {
-          console.log('[ProductController] createProduct - Warehouse found:', warehouse.name, '(ID:', warehouse.id, ')');
 
           // Create or update inventory record
           try {
@@ -244,26 +226,12 @@ class ProductController {
               }
             });
 
-            console.log('[ProductController] createProduct - Inventory findOrCreate result. Created?', created);
-            console.log('[ProductController] createProduct - Inventory ID:', inventory.id, 'Quantity:', inventory.quantity);
-
             if (!created) {
               // Update existing inventory
               inventory.quantity = stockQty;
               inventory.last_updated = new Date();
               await inventory.save();
-              console.log('[ProductController] createProduct - Inventory updated, new quantity:', inventory.quantity);
             }
-
-            // Verify inventory was created/updated
-            const verifyInventory = await Inventory.findOne({
-              where: {
-                tenant_id: tenantId,
-                product_id: product.id,
-                warehouse_id: warehouseId
-              }
-            });
-            console.log('[ProductController] createProduct - Verified inventory exists:', !!verifyInventory, 'Quantity:', verifyInventory?.quantity);
 
             // Log stock movement
             const { StockMovement } = require('../models/index');

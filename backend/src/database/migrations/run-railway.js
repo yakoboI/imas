@@ -1,27 +1,28 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
-
-// Railway PostgreSQL connection URL
-// Replace this with your actual connection URL from Railway
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:dstsWeaAwnAayKOLodUCoqRbatzGfAkR@yamabiko.proxy.rlwy.net:42342/railway';
+require('dotenv').config();
 
 async function runMigration() {
-  console.log('🚀 Starting Railway Postgres Migration...\n');
+  console.log('🚀 Starting Database Migration...\n');
 
-  // Create connection pool with SSL for Railway
+  // Use environment variables for local development, fallback to Railway URL only if explicitly set
   const pool = new Pool({
-    connectionString: DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false // Railway requires SSL but doesn't need certificate verification
-    }
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'inventory_system',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD,
+    ssl: process.env.DB_SSL === 'true' ? {
+      rejectUnauthorized: false // SSL for production (Railway), disabled for local
+    } : false
   });
 
   try {
     // Test connection
     console.log('🔗 Testing database connection...');
     const client = await pool.connect();
-    console.log('✅ Connected to Railway Postgres successfully!\n');
+    console.log('✅ Connected to database successfully!\n');
     
     // Read the SQL migration file
     const migrationPath = path.join(__dirname, '001_create_tables.sql');
@@ -59,7 +60,7 @@ async function runMigration() {
     
     console.log('\n🎉 Migration completed successfully!');
     console.log('\nNext steps:');
-    console.log('1. Go to Railway → Your Postgres Service → Data tab');
+    console.log('1. Verify tables in your database');
     console.log('2. You should see all the tables listed above');
     console.log('3. You can now seed the database (optional):');
     console.log('   cd backend && node src/database/seeds/run.js');

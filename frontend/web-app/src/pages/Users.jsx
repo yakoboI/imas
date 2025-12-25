@@ -23,6 +23,9 @@ import {
   DialogActions,
   DialogContentText,
   Grid,
+  Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add,
@@ -30,17 +33,21 @@ import {
   Delete,
   Search,
   People as PeopleIcon,
+  Close,
 } from '@mui/icons-material';
 import userManagementService from '../services/userManagementService';
 import { toast } from 'react-toastify';
 
 function Users() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const { user } = useSelector((state) => state.auth);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, user: null });
   const [addDialog, setAddDialog] = useState(false);
+  const [userLimit, setUserLimit] = useState({ current: 0, max: 5, remaining: 5, canAddMore: true });
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -59,6 +66,11 @@ function Users() {
     try {
       const response = await userManagementService.getAllUsers();
       setUsers(response.users || response.data || []);
+      
+      // Update user limit info
+      if (response.userLimit) {
+        setUserLimit(response.userLimit);
+      }
     } catch (error) {
       console.error('Failed to load users:', error);
       setUsers([]);
@@ -87,13 +99,33 @@ function Users() {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check user limit before submitting
+    if (!userLimit.canAddMore) {
+      toast.error(`User limit reached. Maximum ${userLimit.max} users allowed for your plan.`);
+      return;
+    }
+    
     try {
-      await userManagementService.createUser(formData);
+      const response = await userManagementService.createUser(formData);
       toast.success('User added successfully');
       setAddDialog(false);
+      setFormData({ email: '', password: '', first_name: '', last_name: '', role: 'viewer' });
+      
+      // Update user limit from response if available
+      if (response.userLimit) {
+        setUserLimit(response.userLimit);
+      }
+      
       loadUsers();
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to add user');
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to add user';
+      toast.error(errorMessage);
+      
+      // Update user limit if provided in error response
+      if (error.response?.data?.userLimit) {
+        setUserLimit(error.response.data.userLimit);
+      }
     }
   };
 
@@ -117,12 +149,43 @@ function Users() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Users</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleAdd}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Users
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            {userLimit.current} of {userLimit.max} users ({userLimit.remaining} remaining)
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Manage user accounts and permissions
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          startIcon={<Add />} 
+          onClick={handleAdd}
+          disabled={!userLimit.canAddMore}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Add User
         </Button>
       </Box>
+      
+      {!userLimit.canAddMore && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          You have reached the maximum number of users ({userLimit.max}) allowed for your plan. 
+          Please contact your administrator to upgrade your plan or increase the user limit.
+        </Alert>
+      )}
 
       <TextField
         fullWidth
@@ -154,43 +217,49 @@ function Users() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Last Login</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Name</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>Email</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Role</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>Last Login</TableCell>
+                <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredUsers.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell>{`${u.first_name || ''} ${u.last_name || ''}`.trim() || 'N/A'}</TableCell>
-                  <TableCell>{u.email || 'N/A'}</TableCell>
-                  <TableCell>
-                    <Chip label={u.role || 'user'} size="small" />
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{`${u.first_name || ''} ${u.last_name || ''}`.trim() || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>{u.email || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    <Chip label={u.role || 'user'} size="small" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     <Chip
                       label={u.status || 'active'}
                       size="small"
                       color={u.status === 'active' ? 'success' : 'default'}
+                      sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', lg: 'table-cell' } }}>
                     {u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never'}
                   </TableCell>
-                  <TableCell align="right">
-                    <IconButton size="small" color="primary">
-                      <Edit />
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <IconButton 
+                      size="small" 
+                      color="primary"
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
+                    >
+                      <Edit fontSize="small" />
                     </IconButton>
                     {u.id !== user?.id && (
                       <IconButton
                         size="small"
                         color="error"
                         onClick={() => setDeleteDialog({ open: true, user: u })}
+                        sx={{ padding: { xs: '4px', sm: '8px' } }}
                       >
-                        <Delete />
+                        <Delete fontSize="small" />
                       </IconButton>
                     )}
                   </TableCell>
@@ -208,7 +277,22 @@ function Users() {
         fullWidth
       >
         <form onSubmit={handleAddSubmit}>
-          <DialogTitle>Add User</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Add User</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setAddDialog(false)}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -273,8 +357,19 @@ function Users() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAddDialog(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">Add User</Button>
+            <Button 
+              onClick={() => setAddDialog(false)}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Add User
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -283,17 +378,40 @@ function Users() {
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, user: null })}
       >
-        <DialogTitle>Delete User</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Delete User</span>
+            {isSmallScreen && (
+              <IconButton
+                edge="end"
+                color="inherit"
+                onClick={() => setDeleteDialog({ open: false, user: null })}
+                aria-label="close"
+                size="small"
+              >
+                <Close />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete this user? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, user: null })}>
+          <Button 
+            onClick={() => setDeleteDialog({ open: false, user: null })}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Cancel
           </Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
+          <Button 
+            onClick={handleDelete} 
+            color="error" 
+            variant="contained"
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Delete
           </Button>
         </DialogActions>

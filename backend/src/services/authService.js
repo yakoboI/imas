@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const jwtConfig = require('../config/jwt');
 const User = require('../models/User');
 const SuperAdmin = require('../models/SuperAdmin');
+const SystemSettingsService = require('./systemSettingsService');
 
 class AuthService {
   // Hash password
@@ -15,8 +16,31 @@ class AuthService {
     return await bcrypt.compare(password, hashedPassword);
   }
 
+  // Get session timeout from system settings (in seconds) and convert to JWT format
+  static async getSessionTimeout() {
+    try {
+      const settings = await SystemSettingsService.getSettings();
+      const timeoutSeconds = settings.sessionTimeout || 3600; // Default 1 hour
+      
+      // Convert seconds to JWT expiresIn format (e.g., "1h", "30m")
+      if (timeoutSeconds < 60) {
+        return `${timeoutSeconds}s`;
+      } else if (timeoutSeconds < 3600) {
+        return `${Math.floor(timeoutSeconds / 60)}m`;
+      } else if (timeoutSeconds < 86400) {
+        return `${Math.floor(timeoutSeconds / 3600)}h`;
+      } else {
+        return `${Math.floor(timeoutSeconds / 86400)}d`;
+      }
+    } catch (error) {
+      console.error('Error getting session timeout, using default:', error);
+      return jwtConfig.expiresIn; // Fallback to default
+    }
+  }
+
   // Generate JWT token for user
-  static generateUserToken(user) {
+  static async generateUserToken(user) {
+    const expiresIn = await this.getSessionTimeout();
     return jwt.sign(
       {
         userId: user.id,
@@ -25,12 +49,13 @@ class AuthService {
         tenantId: user.tenant_id
       },
       jwtConfig.secret,
-      { expiresIn: jwtConfig.expiresIn }
+      { expiresIn }
     );
   }
 
   // Generate JWT token for superadmin
-  static generateSuperAdminToken(superadmin) {
+  static async generateSuperAdminToken(superadmin) {
+    const expiresIn = await this.getSessionTimeout();
     return jwt.sign(
       {
         superadminId: superadmin.id,
@@ -38,7 +63,7 @@ class AuthService {
         role: 'superadmin'
       },
       jwtConfig.secret,
-      { expiresIn: jwtConfig.expiresIn }
+      { expiresIn }
     );
   }
 
@@ -54,11 +79,15 @@ class AuthService {
     }
 
     if (user.status !== 'active') {
-      throw new Error('Account is inactive or suspended');
+      throw new Error(`Account is ${user.status}. Please contact your administrator.`);
+    }
+
+    if (!user.tenant) {
+      throw new Error('User tenant not found');
     }
 
     if (user.tenant.status !== 'active') {
-      throw new Error('Tenant account is suspended');
+      throw new Error('Tenant account is suspended. Please contact support.');
     }
 
     const isPasswordValid = await this.comparePassword(password, user.password);
@@ -72,7 +101,7 @@ class AuthService {
       login_count: (user.login_count || 0) + 1
     });
 
-    const token = this.generateUserToken(user);
+    const token = await this.generateUserToken(user);
 
     return {
       token,
@@ -112,7 +141,7 @@ class AuthService {
     // Update last login
     await superadmin.update({ last_login: new Date() });
 
-    const token = this.generateSuperAdminToken(superadmin);
+    const token = await this.generateSuperAdminToken(superadmin);
 
     return {
       token,

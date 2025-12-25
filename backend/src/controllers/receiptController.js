@@ -96,57 +96,61 @@ class ReceiptController {
       const { id } = req.params;
       const tenantId = req.tenantId;
 
-      const receipt = await ReceiptService.getReceipt(id, tenantId);
+      // Get receipt as Sequelize model instance for updates
+      const Receipt = require('../models/Receipt');
+      const receiptModel = await Receipt.findOne({
+        where: { id, tenant_id: tenantId }
+      });
 
-      if (!receipt) {
+      if (!receiptModel) {
         return res.status(404).json({ error: 'Receipt not found' });
       }
 
-      // If PDF doesn't exist, try to generate it on-demand
-      if (!receipt.pdf_url) {
-        try {
-          // Regenerate PDF
-          const { html, pdfBuffer } = await ReceiptService.generateReceiptDocument(
-            receipt,
-            receipt.template_type || 'thermal'
-          );
-          await receipt.update({ html_content: html });
-          const pdfUrl = await ReceiptService.uploadPDF(receipt.id, pdfBuffer, tenantId);
-          await receipt.update({ pdf_url: pdfUrl });
-          // Reload receipt to get updated pdf_url
-          const updatedReceipt = await ReceiptService.getReceipt(id, tenantId);
-          receipt.pdf_url = updatedReceipt.pdf_url;
-        } catch (genError) {
-          console.error('Error generating PDF on-demand:', genError);
-          console.error('Error stack:', genError.stack);
-          return res.status(500).json({ 
-            error: 'Failed to generate PDF',
-            message: genError.message || 'An error occurred while generating the PDF'
-          });
-        }
+      const templateType = receiptModel.template_type || 'thermal';
+
+      // Always regenerate PDF to ensure latest template is used
+      try {
+        // Regenerate PDF with latest template
+        const { html, pdfBuffer } = await ReceiptService.generateReceiptDocument(
+          receiptModel, // Pass model instance - it has an id property
+          templateType
+        );
+        await receiptModel.update({ html_content: html });
+        const pdfUrl = await ReceiptService.uploadPDF(receiptModel.id, pdfBuffer, tenantId);
+        await receiptModel.update({ pdf_url: pdfUrl });
+        // Reload receipt to get updated pdf_url
+        await receiptModel.reload();
+      } catch (genError) {
+        console.error('Error generating PDF on-demand:', genError);
+        console.error('Error stack:', genError.stack);
+        return res.status(500).json({ 
+          error: 'Failed to generate PDF',
+          message: genError.message || 'An error occurred while generating the PDF'
+        });
       }
 
       // In production, serve from S3
       // For now, serve from local file system
-      const filepath = path.join(__dirname, '../../', receipt.pdf_url);
+      const filepath = path.join(__dirname, '../../', receiptModel.pdf_url);
 
       try {
         await fs.access(filepath);
-        res.download(filepath, `receipt-${receipt.receipt_number}.pdf`);
+        res.download(filepath, `receipt-${receiptModel.receipt_number}.pdf`);
       } catch (fileError) {
         // If file doesn't exist, try to regenerate
         console.error('PDF file not found, attempting to regenerate:', fileError);
         try {
           const { html, pdfBuffer } = await ReceiptService.generateReceiptDocument(
-            receipt,
-            receipt.template_type || 'thermal'
+            receiptModel,
+            templateType
           );
-          await receipt.update({ html_content: html });
-          const pdfUrl = await ReceiptService.uploadPDF(receipt.id, pdfBuffer, tenantId);
-          await receipt.update({ pdf_url: pdfUrl });
-          const newFilepath = path.join(__dirname, '../../', pdfUrl);
+          await receiptModel.update({ html_content: html });
+          const pdfUrl = await ReceiptService.uploadPDF(receiptModel.id, pdfBuffer, tenantId);
+          await receiptModel.update({ pdf_url: pdfUrl });
+          await receiptModel.reload();
+          const newFilepath = path.join(__dirname, '../../', receiptModel.pdf_url);
           await fs.access(newFilepath);
-          res.download(newFilepath, `receipt-${receipt.receipt_number}.pdf`);
+          res.download(newFilepath, `receipt-${receiptModel.receipt_number}.pdf`);
         } catch (regenerateError) {
           console.error('Error regenerating PDF:', regenerateError);
           console.error('Regenerate error stack:', regenerateError.stack);
@@ -157,6 +161,8 @@ class ReceiptController {
         }
       }
     } catch (error) {
+      console.error('Unexpected error in downloadPDF:', error);
+      console.error('Error stack:', error.stack);
       next(error);
     }
   }

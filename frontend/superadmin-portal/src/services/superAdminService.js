@@ -146,6 +146,18 @@ const superAdminService = {
     const response = await api.put('/superadmin/system/settings', settings);
     return response.data;
   },
+
+  // Profile
+  uploadAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.put('/superadmin/profile/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 export default superAdminService;

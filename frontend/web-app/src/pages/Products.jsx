@@ -21,6 +21,8 @@ import {
   DialogActions,
   DialogContentText,
   Grid,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add,
@@ -28,6 +30,7 @@ import {
   Delete,
   Search,
   Inventory as InventoryIcon,
+  Close,
 } from '@mui/icons-material';
 import productService from '../services/productService';
 import categoryService from '../services/categoryService';
@@ -37,6 +40,8 @@ import { toast } from 'react-toastify';
 import { formatCurrency } from '../utils/currency';
 
 function Products() {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -79,7 +84,6 @@ function Products() {
     setLoading(true);
     try {
       const response = await productService.getAllProducts();
-      console.log('Products response:', response);
       const productsList = response.products || response.data || [];
       setProducts(productsList);
     } catch (error) {
@@ -178,7 +182,6 @@ function Products() {
       
       // Only include stock fields if stock_quantity is provided and > 0
       const stockQty = formData.stock_quantity ? parseInt(formData.stock_quantity) : 0;
-      console.log('[Products] handleAddSubmit - Stock quantity:', formData.stock_quantity, 'Parsed:', stockQty, 'Warehouse ID:', formData.warehouse_id);
       
       if (stockQty > 0) {
         if (!formData.warehouse_id || formData.warehouse_id.trim() === '') {
@@ -187,7 +190,6 @@ function Products() {
         }
         dataToSend.stock_quantity = stockQty;
         dataToSend.warehouse_id = formData.warehouse_id;
-        console.log('[Products] handleAddSubmit - Sending stock data:', { stock_quantity: stockQty, warehouse_id: formData.warehouse_id });
       }
       
       const response = await productService.createProduct(dataToSend);
@@ -252,9 +254,29 @@ function Products() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Products</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleAdd}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Products
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Manage your product catalog and inventory
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          startIcon={<Add />} 
+          onClick={handleAdd}
+          size={isSmallScreen ? 'small' : 'medium'}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           Add Product
         </Button>
       </Box>
@@ -289,48 +311,55 @@ function Products() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>SKU</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Price</TableCell>
-                <TableCell>Stock</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Name</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>SKU</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Category</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Price</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Stock</TableCell>
+                <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>Status</TableCell>
+                <TableCell align="right" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredProducts.map((product) => (
                 <TableRow key={product.id}>
-                  <TableCell>{product.name || 'N/A'}</TableCell>
-                  <TableCell>{product.sku || 'N/A'}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{product.name || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>{product.sku || 'N/A'}</TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     {product.category?.name || 'N/A'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     {formatCurrency(product.price || 0, currency)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                     {product.stock_quantity !== undefined && product.stock_quantity !== null 
                       ? Number(product.stock_quantity) 
                       : 0}
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>
                     <Chip
                       label={product.status || 'active'}
                       size="small"
                       color={product.status === 'active' ? 'success' : 'default'}
+                      sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                     />
                   </TableCell>
-                  <TableCell align="right">
-                    <IconButton size="small" color="primary" onClick={() => handleEdit(product)}>
-                      <Edit />
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <IconButton 
+                      size="small" 
+                      color="primary" 
+                      onClick={() => handleEdit(product)}
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
+                    >
+                      <Edit fontSize="small" />
                     </IconButton>
                     <IconButton
                       size="small"
                       color="error"
                       onClick={() => setDeleteDialog({ open: true, product })}
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
-                      <Delete />
+                      <Delete fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -347,7 +376,22 @@ function Products() {
         fullWidth
       >
         <form onSubmit={handleAddSubmit}>
-          <DialogTitle>Add Product</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Add Product</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setAddDialog(false)}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -453,8 +497,19 @@ function Products() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAddDialog(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">Add Product</Button>
+            <Button 
+              onClick={() => setAddDialog(false)}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Add Product
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -462,7 +517,22 @@ function Products() {
       {/* Edit Product Dialog */}
       <Dialog open={editDialog.open} onClose={() => setEditDialog({ open: false, product: null })} maxWidth="sm" fullWidth>
         <form onSubmit={handleEditSubmit}>
-          <DialogTitle>Edit Product</DialogTitle>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Edit Product</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setEditDialog({ open: false, product: null })}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12}>
@@ -530,8 +600,19 @@ function Products() {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setEditDialog({ open: false, product: null })}>Cancel</Button>
-            <Button type="submit" variant="contained">Update Product</Button>
+            <Button 
+              onClick={() => setEditDialog({ open: false, product: null })}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Update Product
+            </Button>
           </DialogActions>
         </form>
       </Dialog>
@@ -540,17 +621,40 @@ function Products() {
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false, product: null })}
       >
-        <DialogTitle>Delete Product</DialogTitle>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Delete Product</span>
+            {isSmallScreen && (
+              <IconButton
+                edge="end"
+                color="inherit"
+                onClick={() => setDeleteDialog({ open: false, product: null })}
+                aria-label="close"
+                size="small"
+              >
+                <Close />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete "{deleteDialog.product?.name}"? This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialog({ open: false, product: null })}>
+          <Button 
+            onClick={() => setDeleteDialog({ open: false, product: null })}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Cancel
           </Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
+          <Button 
+            onClick={handleDelete} 
+            color="error" 
+            variant="contained"
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
             Delete
           </Button>
         </DialogActions>

@@ -10,6 +10,7 @@ router.use(tenantResolver);
 
 // Order routes
 router.get('/', OrderController.getAllOrders);
+router.get('/product/:productId', OrderController.getOrdersByProduct); // Get orders by product
 router.post('/', authorize('admin'), OrderController.createOrder); // Only admin can create orders
 router.get('/:id', OrderController.getOrderById);
 router.put('/:id', authorize('admin'), OrderController.updateOrder); // Only admin can update
