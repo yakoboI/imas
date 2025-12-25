@@ -19,10 +19,14 @@ Write-Host ""
 
 # Common locations to check
 $commonLocations = @(
+    "C:\Program Files\PostgreSQL\18\bin",
+    "C:\Program Files\PostgreSQL\17\bin",
     "C:\Program Files\PostgreSQL\16\bin",
     "C:\Program Files\PostgreSQL\15\bin",
     "C:\Program Files\PostgreSQL\14\bin",
     "C:\Program Files\PostgreSQL\13\bin",
+    "C:\Program Files (x86)\PostgreSQL\18\bin",
+    "C:\Program Files (x86)\PostgreSQL\17\bin",
     "C:\Program Files (x86)\PostgreSQL\16\bin",
     "C:\Program Files (x86)\PostgreSQL\15\bin"
 )
@@ -43,7 +47,7 @@ if (-not $foundBin) {
     Write-Host "PostgreSQL bin directory not found automatically." -ForegroundColor Red
     Write-Host ""
     Write-Host "Please provide the full path to your PostgreSQL 'bin' folder." -ForegroundColor Yellow
-    Write-Host "Example: C:\Program Files\PostgreSQL\16\bin" -ForegroundColor Cyan
+    Write-Host "Example: C:\Program Files\PostgreSQL\18\bin" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "If PostgreSQL is not installed, download it from:" -ForegroundColor Yellow
     Write-Host "https://www.postgresql.org/download/windows/" -ForegroundColor Cyan
