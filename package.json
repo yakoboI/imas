@@ -10,7 +10,8 @@
     "dev:superadmin": "cd frontend/superadmin-portal && npm start",
     "install:all": "npm install && cd backend && npm install && cd ../frontend/web-app && npm install && cd ../superadmin-portal && npm install",
     "build": "cd frontend/web-app && npm run build && cd ../superadmin-portal && npm run build",
-    "test": "cd backend && npm test"
+    "test": "cd backend && npm test",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "keywords": [
     "inventory",
@@ -22,6 +23,8 @@
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "sharp": "^0.34.5"
   }
 }
-

@@ -220,6 +220,43 @@ class SuperAdminController {
       const updateData = { ...req.body };
       const Warehouse = require('../models/Warehouse');
 
+      // Validate and normalize subdomain if being updated
+      if (updateData.subdomain) {
+        // Normalize to lowercase
+        updateData.subdomain = updateData.subdomain.toLowerCase().trim();
+        
+        if (updateData.subdomain !== tenant.subdomain) {
+          // Check if subdomain is valid (alphanumeric and hyphens only, no spaces)
+          const subdomainRegex = /^[a-z0-9-]+$/;
+          if (!subdomainRegex.test(updateData.subdomain)) {
+            return res.status(400).json({ 
+              error: 'Subdomain can only contain lowercase letters, numbers, and hyphens. No spaces or special characters allowed.' 
+            });
+          }
+
+          // Check minimum length
+          if (updateData.subdomain.length < 3) {
+            return res.status(400).json({ 
+              error: 'Subdomain must be at least 3 characters long.' 
+            });
+          }
+
+          // Check if subdomain already exists (excluding current tenant)
+          const existingTenant = await Tenant.findOne({ 
+            where: { 
+              subdomain: updateData.subdomain,
+              id: { [Op.ne]: id }
+            } 
+          });
+
+          if (existingTenant) {
+            return res.status(409).json({ 
+              error: `Subdomain "${updateData.subdomain}" is already taken by another tenant. Please choose a different subdomain.` 
+            });
+          }
+        }
+      }
+
       // If plan_type is being updated, validate and set max_users and max_warehouses accordingly
       if (updateData.plan_type) {
         const planMaxUsers = constants.PLAN_PRICES[updateData.plan_type]?.maxUsers || 5;
@@ -304,12 +341,25 @@ class SuperAdminController {
 
       await tenant.update(updateData);
 
-      // Log system action
+      // Log system action with details
+      const changes = [];
+      if (updateData.name && updateData.name !== oldValues.name) {
+        changes.push(`name: "${oldValues.name}" → "${updateData.name}"`);
+      }
+      if (updateData.subdomain && updateData.subdomain !== oldValues.subdomain) {
+        changes.push(`subdomain: "${oldValues.subdomain}" → "${updateData.subdomain}"`);
+      }
+      if (updateData.plan_type && updateData.plan_type !== oldValues.plan_type) {
+        changes.push(`plan: "${oldValues.plan_type}" → "${updateData.plan_type}"`);
+      }
+      
       await SystemLog.create({
         superadmin_id: req.user.id,
         action: 'UPDATE_TENANT',
         target_tenant_id: id,
-        description: `Tenant ${id} updated`,
+        description: changes.length > 0 
+          ? `Tenant ${tenant.name} (${id}) updated: ${changes.join(', ')}`
+          : `Tenant ${tenant.name} (${id}) updated`,
         ip_address: req.ip,
         user_agent: req.headers['user-agent']
       });
@@ -1015,10 +1065,45 @@ class SuperAdminController {
         ? (monthlyRevenueUSD / activeTenants).toFixed(2) 
         : 0;
 
+      // Calculate active subscriptions count
+      // This should include:
+      // 1. Active subscriptions in the Subscription table
+      // 2. Active tenants with paid plans (non-free) that don't have subscription records
+      let activeSubscriptionsCount = activeSubscriptions.length;
+      
+      if (activeSubscriptionsCount === 0) {
+        // If no subscriptions exist, count active tenants with paid plans
+        const tenantsWithPaidPlans = await Tenant.count({
+          where: {
+            status: 'active',
+            plan_type: { [Op.ne]: 'free' }
+          }
+        });
+        activeSubscriptionsCount = tenantsWithPaidPlans;
+      } else {
+        // If subscriptions exist, also count tenants with paid plans that don't have subscriptions
+        const tenantsWithoutSubscriptions = await Tenant.count({
+          where: {
+            status: 'active',
+            plan_type: { [Op.ne]: 'free' },
+            id: { [Op.notIn]: Array.from(tenantsWithSubscriptions) }
+          }
+        });
+        activeSubscriptionsCount += tenantsWithoutSubscriptions;
+      }
+
       // Get system health for uptime calculation
       const { testConnection } = require('../config/database');
       const dbConnected = await testConnection();
-      const systemUptime = dbConnected ? 99.9 : 0; // Simplified - can be enhanced with actual uptime tracking
+      
+      // Calculate actual uptime from server start time
+      const SERVER_START_TIME = global.SERVER_START_TIME || Date.now();
+      const uptimeMs = Date.now() - SERVER_START_TIME;
+      const uptimeDays = uptimeMs / (1000 * 60 * 60 * 24);
+      
+      // Calculate uptime percentage (simplified - assumes continuous uptime)
+      // In production, track actual downtime periods for accurate percentage
+      const systemUptime = dbConnected && uptimeDays > 0 ? 99.9 : 0;
 
       res.json({
         totalTenants,
@@ -1027,7 +1112,7 @@ class SuperAdminController {
         totalRevenue: parseFloat(totalRevenueUSD.toFixed(2)),
         monthlyRevenue: parseFloat(monthlyRevenueUSD.toFixed(2)),
         thisMonthRevenue: parseFloat(thisMonthRevenueUSD.toFixed(2)),
-        activeSubscriptions: activeSubscriptions.length,
+        activeSubscriptions: activeSubscriptionsCount,
         totalOrders,
         totalProducts,
         totalCustomers,
@@ -1079,11 +1164,52 @@ class SuperAdminController {
   static async getSystemHealth(req, res, next) {
     try {
       const { testConnection } = require('../config/database');
+      const performanceMetrics = require('../services/performanceMetrics');
       const dbStatus = await testConnection();
 
+      // Calculate uptime from server start time
+      const SERVER_START_TIME = global.SERVER_START_TIME || Date.now();
+      const uptimeMs = Date.now() - SERVER_START_TIME;
+      const uptimeSeconds = Math.floor(uptimeMs / 1000);
+      const uptimeMinutes = Math.floor(uptimeSeconds / 60);
+      const uptimeHours = Math.floor(uptimeMinutes / 60);
+      const uptimeDays = Math.floor(uptimeHours / 24);
+      
+      const uptimeFormatted = uptimeDays > 0 
+        ? `${uptimeDays}d ${uptimeHours % 24}h ${uptimeMinutes % 60}m`
+        : uptimeHours > 0
+        ? `${uptimeHours}h ${uptimeMinutes % 60}m`
+        : `${uptimeMinutes}m ${uptimeSeconds % 60}s`;
+
+      // Get performance metrics
+      const perfSummary = performanceMetrics.getPerformanceSummary();
+
       res.json({
-        status: 'ok',
+        status: dbStatus ? 'ok' : 'degraded',
         database: dbStatus ? 'connected' : 'disconnected',
+        uptime: uptimeFormatted,
+        uptimeMs: uptimeMs,
+        performance: {
+          averageResponseTime: perfSummary.averageResponseTime,
+          recentAverageResponseTime: perfSummary.recentAverageResponseTime,
+          p95ResponseTime: perfSummary.p95ResponseTime,
+          totalRequests: perfSummary.totalRequests
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get performance metrics
+  static async getPerformanceMetrics(req, res, next) {
+    try {
+      const performanceMetrics = require('../services/performanceMetrics');
+      const summary = performanceMetrics.getPerformanceSummary();
+      
+      res.json({
+        ...summary,
         timestamp: new Date().toISOString()
       });
     } catch (error) {

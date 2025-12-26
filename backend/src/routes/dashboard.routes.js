@@ -11,5 +11,8 @@ router.use(tenantResolver);
 // Get dashboard statistics
 router.get('/stats', DashboardController.getDashboardStats);
 
+// Get chart data for analytics
+router.get('/chart-data', DashboardController.getChartData);
+
 module.exports = router;
 

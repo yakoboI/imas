@@ -9,6 +9,7 @@
     "migrate:all": "node run-all-migrations-railway.js",
     "migrate:avatar": "node run-avatar-migration-production.js",
     "seed": "node src/database/seeds/run.js",
+    "update-superadmin": "node src/database/seeds/update-superadmin.js",
     "test": "jest",
     "install:win": "powershell -Command \"$env:PUPPETEER_SKIP_DOWNLOAD='true'; npm install\""
   },

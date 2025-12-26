@@ -105,9 +105,9 @@ function Landing() {
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', position: 'relative', bgcolor: '#fafbfc' }}>
       <SEO
-        title="IMAS - Modern Inventory Management"
-        description="Comprehensive inventory management with real-time notifications, multi-warehouse support, and enterprise-grade security. Start free today."
-        keywords="inventory management, stock management, warehouse management, order management, business software, inventory tracking"
+        title="Modern Enterprise Inventory - IMAS"
+        description="Scale operations with real-time analytics and multi-warehouse synchronization. Track revenue, manage budgets, and optimize financial performance with comprehensive business finance software."
+        keywords="imas, IMAS, IMS, ims, system, management, inventory, business ideas, enterprise inventory, inventory management, real-time analytics, multi-warehouse, inventory synchronization, business operations, stock management, warehouse management, inventory system, order management, business management software, finance software, financial management, budget software, money management, business finance, revenue tracking, financial reporting, expense tracking, cash flow management, business budgeting, financial analytics, accounting software, business intelligence, financial planning, cost management, profit tracking, sales revenue, payment processing, financial dashboard, business accounting, financial control, money tracking, budget planning, financial software for business, inventory finance, warehouse finance, business money management, cloud-based inventory, SaaS inventory, web-based inventory, online inventory system, multitenant software, multi-tenant platform, cloud inventory platform, real-time inventory, live inventory tracking, instant inventory updates, mobile inventory app, responsive inventory, PWA inventory, API integration, inventory API, business software integration, retail inventory management, ecommerce inventory, online store inventory, manufacturing inventory, production inventory, supply chain management, wholesale inventory, distributor inventory, B2B inventory, small business inventory, startup inventory, SMB inventory software, enterprise inventory solution, large business inventory, automated reordering, stock alerts, low stock notifications, barcode scanning, QR code inventory, product scanning, order fulfillment, order tracking, order management system, receipt generation, invoice management, sales receipts, audit trail, activity log, compliance tracking, role-based access, user permissions, security controls, cost savings calculator, ROI calculator, inventory optimization, supplier management, vendor management, purchase orders, customer management, CRM integration, sales tracking, track inventory, manage stock, control inventory, optimize inventory, reduce waste, minimize costs, automate inventory, streamline operations, monitor inventory, analyze sales, forecast demand, scale business, grow operations, expand inventory, best inventory management software for small business, free inventory management system with finance tracking, cloud-based inventory software with multi-warehouse support, inventory management with budget planning, real-time inventory tracking software, inventory system with financial reporting, multi-location inventory management, inventory software with revenue tracking, business inventory management with analytics, inventory management for retail stores"
       />
 
       {/* Hero Section */}
@@ -132,16 +132,6 @@ function Landing() {
       >
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           <Box sx={{ textAlign: 'center', maxWidth: '800px', mx: 'auto' }}>
-            <Chip
-              label="Enterprise-Ready Platform"
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                mb: 3,
-                fontWeight: 600,
-                backdropFilter: 'blur(10px)',
-              }}
-            />
             <Typography
               variant="h1"
               sx={{
@@ -154,19 +144,7 @@ function Landing() {
                 letterSpacing: '-0.02em',
               }}
             >
-              IMAS
-            </Typography>
-            <Typography
-              variant="h4"
-              sx={{
-                fontSize: { xs: '1.25rem', md: '1.75rem' },
-                fontWeight: 300,
-                mb: 3,
-                opacity: 0.95,
-                letterSpacing: '0.02em',
-              }}
-            >
-              Modern Inventory Management
+              Modern Enterprise Inventory
             </Typography>
             <Typography
               variant="body1"
@@ -179,13 +157,13 @@ function Landing() {
                 lineHeight: 1.7,
               }}
             >
-              Streamline your business operations with comprehensive analytics, real-time notifications, and seamless multi-warehouse management.
+              Scale operations with real-time analytics and multi-warehouse synchronization.
             </Typography>
             <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={2}
+              direction="row"
+              spacing={{ xs: 1.5, sm: 2 }}
               justifyContent="center"
-              sx={{ mb: 4 }}
+              sx={{ mb: 4, flexWrap: 'wrap' }}
             >
               <Button
                 variant="contained"
@@ -195,9 +173,9 @@ function Landing() {
                 sx={{
                   bgcolor: 'white',
                   color: 'primary.main',
-                  px: 4,
-                  py: 1.5,
-                  fontSize: '1rem',
+                  px: { xs: 2.5, sm: 3, md: 4 },
+                  py: { xs: 1.25, sm: 1.5 },
+                  fontSize: { xs: '0.875rem', sm: '0.9375rem', md: '1rem' },
                   fontWeight: 600,
                   borderRadius: 2,
                   boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
@@ -219,9 +197,9 @@ function Landing() {
                   borderColor: 'rgba(255,255,255,0.5)',
                   borderWidth: 2,
                   color: 'white',
-                  px: 4,
-                  py: 1.5,
-                  fontSize: '1rem',
+                  px: { xs: 2.5, sm: 3, md: 4 },
+                  py: { xs: 1.25, sm: 1.5 },
+                  fontSize: { xs: '0.875rem', sm: '0.9375rem', md: '1rem' },
                   fontWeight: 600,
                   borderRadius: 2,
                   backdropFilter: 'blur(10px)',
@@ -238,27 +216,18 @@ function Landing() {
             </Stack>
             <Box sx={{ display: 'flex', gap: 4, justifyContent: 'center', flexWrap: 'wrap', mt: 4 }}>
               <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: "'Courier New', monospace" }}>
                   Multi-Tenant
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                  Architecture
+              </Box>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: "'Courier New', monospace" }}>
+                  Optimized
                 </Typography>
               </Box>
               <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  Fast
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                  Performance
-                </Typography>
-              </Box>
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  24/7
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                  Cloud Access
+                <Typography variant="h4" sx={{ fontWeight: 700, fontFamily: "'Courier New', monospace" }}>
+                  Cloud-Native
                 </Typography>
               </Box>
             </Box>
@@ -291,9 +260,9 @@ function Landing() {
           </Typography>
         </Box>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
           {features.map((feature, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
+            <Grid item xs={4} sm={4} md={4} key={index}>
               <Card
                 sx={{
                   height: '100%',
@@ -325,21 +294,22 @@ function Landing() {
                   },
                 }}
               >
-                <CardContent sx={{ p: 3 }}>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 }, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Box
                     sx={{
-                      width: 56,
-                      height: 56,
+                      width: { xs: 40, sm: 48, md: 56 },
+                      height: { xs: 40, sm: 48, md: 56 },
                       borderRadius: 2,
                       background: `linear-gradient(135deg, ${feature.color}15 0%, ${feature.color}25 100%)`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      mb: 2,
+                      mb: { xs: 1, sm: 1.5, md: 2 },
                       color: feature.color,
                       transition: 'transform 0.3s ease',
+                      mx: 'auto',
                       '& svg': {
-                        fontSize: 28,
+                        fontSize: { xs: 20, sm: 24, md: 28 },
                       },
                     }}
                   >
@@ -348,9 +318,12 @@ function Landing() {
                   <Typography
                     variant="h6"
                     sx={{
-                      fontWeight: 700,
-                      mb: 1,
-                      fontSize: '1.25rem',
+                      fontWeight: 600,
+                      mb: { xs: 0.5, sm: 0.75, md: 1 },
+                      fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' },
+                      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+                      letterSpacing: '0.02em',
+                      textAlign: 'center',
                     }}
                   >
                     {feature.title}
@@ -358,7 +331,13 @@ function Landing() {
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ lineHeight: 1.7, fontSize: '0.95rem' }}
+                    sx={{ 
+                      lineHeight: 1.7, 
+                      fontSize: { xs: '0.75rem', sm: '0.85rem', md: '0.95rem' },
+                      textAlign: 'center',
+                      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+                      fontWeight: 400,
+                    }}
                   >
                     {feature.description}
                   </Typography>
@@ -396,6 +375,7 @@ function Landing() {
                   fontWeight: 800,
                   mb: 2,
                   fontSize: { xs: '1.75rem', md: '2.25rem' },
+                  fontFamily: '"Lucida Handwriting", cursive',
                 }}
               >
                 Built for Modern Businesses
@@ -403,7 +383,12 @@ function Landing() {
               <Typography
                 variant="body1"
                 color="text.secondary"
-                sx={{ mb: 4, fontSize: '1.1rem', lineHeight: 1.8 }}
+                sx={{ 
+                  mb: 4, 
+                  fontSize: '1.1rem', 
+                  lineHeight: 1.8,
+                  fontFamily: '"Lucida Handwriting", cursive',
+                }}
               >
                 Experience enterprise-grade inventory management with comprehensive features,
                 designed to help you scale efficiently and make informed decisions with real-time data.
@@ -431,7 +416,11 @@ function Landing() {
                     />
                     <Typography
                       variant="body1"
-                      sx={{ fontSize: '1.05rem', fontWeight: 500 }}
+                      sx={{ 
+                        fontSize: '1.05rem', 
+                        fontWeight: 500,
+                        fontFamily: '"Lucida Handwriting", cursive',
+                      }}
                     >
                       {benefit}
                     </Typography>
@@ -468,46 +457,60 @@ function Landing() {
                     mb: 3,
                     position: 'relative',
                     zIndex: 1,
+                    fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
                   }}
                 >
                   Trusted by Businesses
                 </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, position: 'relative', zIndex: 1 }}>
+                <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }} sx={{ position: 'relative', zIndex: 1 }}>
                   {[
                     { label: 'Startups', desc: 'Launch faster with instant setup' },
                     { label: 'SMBs', desc: 'Scale without complexity' },
                     { label: 'Enterprises', desc: 'Multi-warehouse at scale' },
                     { label: 'Retailers', desc: 'Real-time inventory control' },
                   ].map((item, idx) => (
-                    <Box
-                      key={idx}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 2,
-                        p: 2,
-                        borderRadius: 2,
-                        bgcolor: 'rgba(255,255,255,0.6)',
-                        backdropFilter: 'blur(10px)',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          bgcolor: 'rgba(255,255,255,0.8)',
-                          transform: 'translateX(4px)',
-                        },
-                      }}
-                    >
-                      <TrendingUp sx={{ color: 'primary.main', mt: 0.5 }} />
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                          {item.label}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {item.desc}
-                        </Typography>
+                    <Grid item xs={6} sm={6} md={12} key={idx}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: { xs: 1, sm: 1.5, md: 2 },
+                          p: { xs: 1.5, sm: 1.75, md: 2 },
+                          borderRadius: 2,
+                          bgcolor: 'rgba(255,255,255,0.6)',
+                          backdropFilter: 'blur(10px)',
+                          transition: 'all 0.2s ease',
+                          height: '100%',
+                          '&:hover': {
+                            bgcolor: 'rgba(255,255,255,0.8)',
+                            transform: { xs: 'translateY(-2px)', md: 'translateX(4px)' },
+                          },
+                        }}
+                      >
+                        <TrendingUp sx={{ color: 'primary.main', mt: 0.5, fontSize: { xs: 18, sm: 20, md: 24 } }} />
+                        <Box>
+                          <Typography 
+                            variant="subtitle1" 
+                            sx={{ 
+                              fontWeight: 600, 
+                              mb: 0.5,
+                              fontSize: { xs: '0.875rem', sm: '0.9375rem', md: '1rem' }
+                            }}
+                          >
+                            {item.label}
+                          </Typography>
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary"
+                            sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem', md: '0.875rem' } }}
+                          >
+                            {item.desc}
+                          </Typography>
+                        </Box>
                       </Box>
-                    </Box>
+                    </Grid>
                   ))}
-                </Box>
+                </Grid>
               </Card>
             </Grid>
           </Grid>

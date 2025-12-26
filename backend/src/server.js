@@ -35,6 +35,14 @@ const notificationRoutes = require('./routes/notification.routes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Track server start time for uptime calculation
+const SERVER_START_TIME = Date.now();
+const SERVER_START_DATE = new Date();
+
+// Make server start time available globally
+global.SERVER_START_TIME = SERVER_START_TIME;
+global.SERVER_START_DATE = SERVER_START_DATE;
+
 // Middleware
 app.use(helmet());
 app.use(compression());
@@ -82,12 +90,27 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check
+// Health check with uptime
 app.get('/health', async (req, res) => {
   const dbStatus = await testConnection();
+  const uptimeMs = Date.now() - (global.SERVER_START_TIME || SERVER_START_TIME);
+  const uptimeSeconds = Math.floor(uptimeMs / 1000);
+  const uptimeMinutes = Math.floor(uptimeSeconds / 60);
+  const uptimeHours = Math.floor(uptimeMinutes / 60);
+  const uptimeDays = Math.floor(uptimeHours / 24);
+  
+  const uptimeFormatted = uptimeDays > 0 
+    ? `${uptimeDays}d ${uptimeHours % 24}h ${uptimeMinutes % 60}m`
+    : uptimeHours > 0
+    ? `${uptimeHours}h ${uptimeMinutes % 60}m`
+    : `${uptimeMinutes}m ${uptimeSeconds % 60}s`;
+  
   res.json({
     status: 'ok',
     database: dbStatus ? 'connected' : 'disconnected',
+    uptime: uptimeFormatted,
+    uptimeMs: uptimeMs,
+    startedAt: SERVER_START_DATE.toISOString(),
     timestamp: new Date().toISOString()
   });
 });

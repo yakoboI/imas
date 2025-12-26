@@ -9,23 +9,84 @@ class ReportController {
       const tenantId = req.tenantId;
       const { startDate, endDate } = req.query;
 
-      const where = { tenant_id: tenantId, status: 'active' };
-      const receiptWhere = { tenant_id: tenantId, status: 'active' };
+      // Include all receipts that are NOT voided or cancelled
+      // This ensures we capture all sales, even if status is null or different
+      const receiptWhere = {
+        tenant_id: tenantId,
+        status: { [Op.notIn]: ['voided', 'cancelled'] }
+      };
 
       if (startDate || endDate) {
         const dateFilter = {};
-        if (startDate) dateFilter[Op.gte] = new Date(startDate);
-        if (endDate) dateFilter[Op.lte] = new Date(endDate);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          dateFilter[Op.gte] = start;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          dateFilter[Op.lte] = end;
+        }
         receiptWhere.issue_date = dateFilter;
-        where.order_date = dateFilter;
       }
 
-      // Total revenue
-      const totalRevenue = await Receipt.findAll({
+      // Total revenue from receipts
+      const totalRevenueFromReceipts = await Receipt.findAll({
         where: receiptWhere,
         attributes: [[fn('SUM', col('total_amount')), 'total']],
         raw: true
       });
+
+      // Also include completed orders without receipts (sales that haven't generated receipts yet)
+      const orderWhere = { tenant_id: tenantId, status: 'completed' };
+      if (startDate || endDate) {
+        const dateFilter = {};
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          dateFilter[Op.gte] = start;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          dateFilter[Op.lte] = end;
+        }
+        orderWhere.order_date = dateFilter;
+      }
+
+      // Get orders without receipts (sales that haven't generated receipts yet)
+      const orderReplacements = { tenantId };
+      let orderDateFilter = '';
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        orderReplacements.startDate = start.toISOString();
+        orderDateFilter += ' AND o.order_date >= :startDate';
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        orderReplacements.endDate = end.toISOString();
+        orderDateFilter += ' AND o.order_date <= :endDate';
+      }
+
+      const ordersWithoutReceipts = await sequelize.query(
+        `SELECT COALESCE(SUM(o.total_amount), 0) as total
+         FROM orders o
+         LEFT JOIN receipts r ON o.id = r.order_id AND (r.status IS NULL OR (r.status != 'voided' AND r.status != 'cancelled'))
+         WHERE o.tenant_id = :tenantId
+           AND o.status = 'completed'
+           AND r.id IS NULL${orderDateFilter}`,
+        {
+          replacements: orderReplacements,
+          type: sequelize.QueryTypes.SELECT
+        }
+      );
+
+      const receiptRevenue = parseFloat(totalRevenueFromReceipts[0]?.total || 0);
+      const orderRevenue = parseFloat(ordersWithoutReceipts[0]?.total || 0);
+      const totalRevenue = receiptRevenue + orderRevenue;
 
       // Revenue by date (daily)
       const revenueByDate = await Receipt.findAll({
@@ -44,11 +105,15 @@ class ReportController {
       const replacements = { tenantId };
       let dateFilter = '';
       if (startDate) {
-        replacements.startDate = startDate;
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        replacements.startDate = start.toISOString();
         dateFilter += ' AND r.issue_date >= :startDate';
       }
       if (endDate) {
-        replacements.endDate = endDate;
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        replacements.endDate = end.toISOString();
         dateFilter += ' AND r.issue_date <= :endDate';
       }
       
@@ -63,7 +128,7 @@ class ReportController {
         INNER JOIN receipts r ON ri.receipt_id = r.id
         LEFT JOIN products p ON ri.product_id = p.id
         WHERE r.tenant_id = :tenantId 
-          AND r.status = 'active'${dateFilter}
+          AND (r.status IS NULL OR r.status != 'voided' AND r.status != 'cancelled')${dateFilter}
         GROUP BY ri.product_id, p.name, p.sku
         ORDER BY revenue DESC
         LIMIT 10`,
@@ -84,7 +149,7 @@ class ReportController {
         FROM receipts r
         LEFT JOIN customers c ON r.customer_id = c.id
         WHERE r.tenant_id = :tenantId 
-          AND r.status = 'active'${dateFilter}
+          AND (r.status IS NULL OR r.status != 'voided' AND r.status != 'cancelled')${dateFilter}
         GROUP BY r.customer_id, c.name, c.email
         ORDER BY revenue DESC
         LIMIT 10`,
@@ -107,7 +172,7 @@ class ReportController {
       });
 
       res.json({
-        totalRevenue: parseFloat(totalRevenue[0]?.total || 0),
+        totalRevenue: totalRevenue,
         revenueByDate: revenueByDate.map(r => ({
           date: r.date,
           revenue: parseFloat(r.revenue || 0),
@@ -338,11 +403,23 @@ class ReportController {
       const tenantId = req.tenantId;
       const { startDate, endDate } = req.query;
 
-      const receiptWhere = { tenant_id: tenantId, status: 'active' };
+      // Include all receipts that are NOT voided or cancelled
+      const receiptWhere = {
+        tenant_id: tenantId,
+        status: { [Op.notIn]: ['voided', 'cancelled'] }
+      };
       if (startDate || endDate) {
         const dateFilter = {};
-        if (startDate) dateFilter[Op.gte] = new Date(startDate);
-        if (endDate) dateFilter[Op.lte] = new Date(endDate);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          dateFilter[Op.gte] = start;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          dateFilter[Op.lte] = end;
+        }
         receiptWhere.issue_date = dateFilter;
       }
 
@@ -355,11 +432,15 @@ class ReportController {
       const replacementsCustomers = { tenantId };
       let dateFilterCustomers = '';
       if (startDate) {
-        replacementsCustomers.startDate = startDate;
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        replacementsCustomers.startDate = start.toISOString();
         dateFilterCustomers += ' AND r.issue_date >= :startDate';
       }
       if (endDate) {
-        replacementsCustomers.endDate = endDate;
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        replacementsCustomers.endDate = end.toISOString();
         dateFilterCustomers += ' AND r.issue_date <= :endDate';
       }
       
@@ -375,7 +456,7 @@ class ReportController {
         FROM receipts r
         LEFT JOIN customers c ON r.customer_id = c.id
         WHERE r.tenant_id = :tenantId 
-          AND r.status = 'active'${dateFilterCustomers}
+          AND (r.status IS NULL OR r.status != 'voided' AND r.status != 'cancelled')${dateFilterCustomers}
         GROUP BY r.customer_id, c.name, c.email, c.phone
         ORDER BY total_revenue DESC
         LIMIT 20`,
@@ -424,11 +505,23 @@ class ReportController {
       const tenantId = req.tenantId;
       const { startDate, endDate } = req.query;
 
-      const receiptWhere = { tenant_id: tenantId, status: 'active' };
+      // Include all receipts that are NOT voided or cancelled
+      const receiptWhere = {
+        tenant_id: tenantId,
+        status: { [Op.notIn]: ['voided', 'cancelled'] }
+      };
       if (startDate || endDate) {
         const dateFilter = {};
-        if (startDate) dateFilter[Op.gte] = new Date(startDate);
-        if (endDate) dateFilter[Op.lte] = new Date(endDate);
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          dateFilter[Op.gte] = start;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          dateFilter[Op.lte] = end;
+        }
         receiptWhere.issue_date = dateFilter;
       }
 
@@ -436,11 +529,15 @@ class ReportController {
       const replacementsProducts = { tenantId };
       let dateFilterProducts = '';
       if (startDate) {
-        replacementsProducts.startDate = startDate;
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        replacementsProducts.startDate = start.toISOString();
         dateFilterProducts += ' AND r.issue_date >= :startDate';
       }
       if (endDate) {
-        replacementsProducts.endDate = endDate;
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        replacementsProducts.endDate = end.toISOString();
         dateFilterProducts += ' AND r.issue_date <= :endDate';
       }
       
@@ -459,7 +556,7 @@ class ReportController {
         LEFT JOIN products p ON ri.product_id = p.id
         LEFT JOIN categories c ON p.category_id = c.id
         WHERE r.tenant_id = :tenantId 
-          AND r.status = 'active'${dateFilterProducts}
+          AND (r.status IS NULL OR r.status != 'voided' AND r.status != 'cancelled')${dateFilterProducts}
         GROUP BY ri.product_id, p.name, p.sku, c.name, p.price, p.cost
         ORDER BY total_quantity DESC
         LIMIT 20`,
@@ -567,11 +664,23 @@ class ReportController {
 
   // Helper methods (extracted for reuse)
   static async getSalesReportData(tenantId, startDate, endDate) {
-    const receiptWhere = { tenant_id: tenantId, status: 'active' };
+    // Include all receipts that are NOT voided or cancelled
+    const receiptWhere = {
+      tenant_id: tenantId,
+      status: { [Op.notIn]: ['voided', 'cancelled'] }
+    };
     if (startDate || endDate) {
       const dateFilter = {};
-      if (startDate) dateFilter[Op.gte] = new Date(startDate);
-      if (endDate) dateFilter[Op.lte] = new Date(endDate);
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        dateFilter[Op.gte] = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        dateFilter[Op.lte] = end;
+      }
       receiptWhere.issue_date = dateFilter;
     }
 

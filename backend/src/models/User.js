@@ -147,6 +147,14 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  password_reset_token: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  password_reset_expires: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
   // Personal Stats (Read-only)
   total_orders_processed: {
     type: DataTypes.INTEGER,
@@ -175,7 +183,8 @@ const User = sequelize.define('User', {
     { fields: ['email'] },
     { fields: ['tenant_id', 'email'] },
     { fields: ['status'] },
-    { fields: ['role'] }
+    { fields: ['role'] },
+    { fields: ['password_reset_token'] }
   ]
 });
 

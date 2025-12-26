@@ -44,6 +44,7 @@ function TenantEdit() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingTenant, setLoadingTenant] = useState(true);
+  const [originalSubdomain, setOriginalSubdomain] = useState('');
 
   useEffect(() => {
     loadTenant();
@@ -64,6 +65,7 @@ function TenantEdit() {
         company_phone: tenant.company_phone || '',
         company_address: tenant.company_address || '',
       });
+      setOriginalSubdomain(tenant.subdomain || '');
     } catch (err) {
       toast.error('Failed to load tenant details');
       navigate('/tenants');
@@ -101,6 +103,7 @@ function TenantEdit() {
       // Map camelCase to snake_case for backend
       const updateData = {
         name: formData.name,
+        subdomain: formData.subdomain,
         plan_type: formData.planType,
         max_users: formData.maxUsers,
         max_warehouses: formData.maxWarehouses,
@@ -166,8 +169,15 @@ function TenantEdit() {
                 name="subdomain"
                 value={formData.subdomain}
                 onChange={handleChange}
-                helperText="Unique subdomain for this tenant (e.g., companyname)"
-                disabled
+                helperText={
+                  formData.subdomain !== originalSubdomain
+                    ? "⚠️ Warning: Changing subdomain may affect tenant access. Ensure it's unique and contains only lowercase letters, numbers, and hyphens."
+                    : "Unique subdomain for this tenant (e.g., companyname). Only lowercase letters, numbers, and hyphens allowed."
+                }
+                inputProps={{
+                  pattern: '[a-z0-9-]+',
+                  style: { textTransform: 'lowercase' }
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>

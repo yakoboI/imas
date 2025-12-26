@@ -32,7 +32,7 @@ This repository contains **confidential information** that should NOT be committ
   - `backend/src/config/environment.js` (line 10)
   - `backend/create-env.ps1` (line 60)
   - `start-all.ps1` (line 68)
-- **Issue**: Default superadmin password `ChangeThisPassword123!` exposed
+- **Issue**: Default superadmin password is set (should use environment variables in production)
 - **Risk**: MEDIUM - Should be changed in production
 - **Recommendation**: Ensure production uses environment variables, not defaults
 

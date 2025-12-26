@@ -6,6 +6,7 @@ import { Box } from '@mui/material';
 import Layout from './components/layout/Layout';
 import Login from './pages/Auth/Login';
 import Dashboard from './pages/Dashboard';
+import InstallPrompt from './components/InstallPrompt';
 import Tenants from './pages/Tenants/TenantList';
 import TenantDetails from './pages/Tenants/TenantDetails';
 import TenantCreate from './pages/Tenants/TenantCreate';
@@ -22,8 +23,23 @@ function PrivateRoute({ children }) {
 }
 
 function App() {
+  // Register service worker on app load
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((registration) => {
+          console.log('Service Worker registered:', registration);
+        })
+        .catch((error) => {
+          console.error('Service Worker registration failed:', error);
+        });
+    }
+  }, []);
+
   return (
-    <Routes>
+    <>
+      <InstallPrompt />
+      <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
 
@@ -52,6 +68,7 @@ function App() {
       {/* 404 */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </>
   );
 }
 

@@ -41,6 +41,10 @@ class TenantSettingsController {
           address: tenant.company_address || '',
           logo: tenant.company_logo_url || '',
           taxId: tenant.tax_id || ''
+        },
+        tenant: {
+          name: tenant.name || '',
+          subdomain: tenant.subdomain || ''
         }
       };
 
@@ -161,6 +165,10 @@ class TenantSettingsController {
           address: tenant.company_address || '',
           logo: tenant.company_logo_url || '',
           taxId: tenant.tax_id || ''
+        },
+        tenant: {
+          name: tenant.name || '',
+          subdomain: tenant.subdomain || ''
         }
       });
     } catch (error) {

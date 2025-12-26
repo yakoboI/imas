@@ -76,20 +76,55 @@ class EmailService {
   }
 
   // Send password reset email (forceSend = true for critical security emails)
-  static async sendPasswordResetEmail(email, resetToken) {
+  static async sendPasswordResetEmail(email, resetToken, name = 'User') {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
     
     const html = `
-      <h2>Password Reset Request</h2>
-      <p>You requested to reset your password. Click the link below to reset it:</p>
-      <a href="${resetUrl}">Reset Password</a>
-      <p>This link will expire in 1 hour.</p>
-      <p>If you didn't request this, please ignore this email.</p>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }
+          .button { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Password Reset Request</h1>
+          </div>
+          <div class="content">
+            <p>Hello ${name},</p>
+            <p>We received a request to reset your password for your IMAS account. Click the button below to reset your password:</p>
+            <div style="text-align: center;">
+              <a href="${resetUrl}" class="button">Reset Password</a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #667eea;">${resetUrl}</p>
+            <div class="warning">
+              <strong>Important:</strong> This link will expire in 1 hour for security reasons.
+            </div>
+            <p>If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
+            <p>For security reasons, never share this link with anyone.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated message from IMAS - Inventory Management System</p>
+            <p>If you have any questions, please contact your system administrator.</p>
+          </div>
+        </div>
+      </body>
+      </html>
     `;
 
     return await this.sendEmail({
       to: email,
-      subject: 'Password Reset Request',
+      subject: 'Password Reset Request - IMAS',
       html,
       forceSend: true // Always send password reset emails (security critical)
     });

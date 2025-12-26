@@ -144,23 +144,61 @@ class AuthController {
         return res.status(400).json({ error: 'Email is required' });
       }
 
-      const user = await User.findOne({ where: { email } });
-
-      if (!user) {
-        // Don't reveal if user exists
-        return res.json({ message: 'If the email exists, a password reset link has been sent' });
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
       }
 
-      // Generate reset token (simplified - in production use proper token generation)
-      const resetToken = require('crypto').randomBytes(32).toString('hex');
-      // Store token in database with expiry (simplified)
+      const user = await User.findOne({ where: { email } });
 
-      // Send email
+      // Don't reveal if user exists (security best practice)
+      if (!user) {
+        return res.json({ 
+          message: 'If the email exists, a password reset link has been sent to your email address.' 
+        });
+      }
+
+      // Check if user is active
+      if (user.status !== 'active') {
+        return res.json({ 
+          message: 'If the email exists, a password reset link has been sent to your email address.' 
+        });
+      }
+
+      // Generate secure reset token
+      const crypto = require('crypto');
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      
+      // Set token expiry to 1 hour from now
+      const resetTokenExpiry = new Date();
+      resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1);
+
+      // Store token and expiry in database
+      await user.update({
+        password_reset_token: resetToken,
+        password_reset_expires: resetTokenExpiry
+      });
+
+      // Send password reset email
       const emailService = require('../services/emailService');
-      await emailService.sendPasswordResetEmail(email, resetToken);
+      try {
+        await emailService.sendPasswordResetEmail(user.email, resetToken, user.first_name || 'User');
+      } catch (emailError) {
+        // If email fails, clear the token so user can request again
+        await user.update({
+          password_reset_token: null,
+          password_reset_expires: null
+        });
+        console.error('Failed to send password reset email:', emailError);
+        // Still return success message for security (don't reveal email issues)
+      }
 
-      res.json({ message: 'If the email exists, a password reset link has been sent' });
+      res.json({ 
+        message: 'If the email exists, a password reset link has been sent to your email address.' 
+      });
     } catch (error) {
+      console.error('Forgot password error:', error);
       next(error);
     }
   }
@@ -174,11 +212,62 @@ class AuthController {
         return res.status(400).json({ error: 'Token and new password are required' });
       }
 
-      // Verify token and update password (simplified)
-      // In production, verify token from database
+      // Validate password strength
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+      }
 
-      res.json({ message: 'Password reset successfully' });
+      // Find user by reset token
+      const user = await User.findOne({
+        where: {
+          password_reset_token: token
+        }
+      });
+
+      if (!user) {
+        return res.status(400).json({ error: 'Invalid or expired reset token' });
+      }
+
+      // Check if token has expired
+      if (!user.password_reset_expires || new Date() > new Date(user.password_reset_expires)) {
+        // Clear expired token
+        await user.update({
+          password_reset_token: null,
+          password_reset_expires: null
+        });
+        return res.status(400).json({ error: 'Reset token has expired. Please request a new password reset.' });
+      }
+
+      // Hash new password
+      const hashedPassword = await AuthService.hashPassword(newPassword);
+
+      // Update password and clear reset token
+      await user.update({
+        password: hashedPassword,
+        password_reset_token: null,
+        password_reset_expires: null
+      });
+
+      // Log password reset action
+      try {
+        await AuditService.logAction({
+          tenant_id: user.tenant_id,
+          user_id: user.id,
+          action: 'PASSWORD_RESET',
+          entity_type: 'User',
+          entity_id: user.id,
+          ip_address: req.ip,
+          user_agent: req.headers['user-agent'],
+          description: 'User reset password via email link'
+        });
+      } catch (auditError) {
+        // Don't fail if audit logging fails
+        console.error('Failed to log password reset audit:', auditError);
+      }
+
+      res.json({ message: 'Password has been reset successfully. You can now login with your new password.' });
     } catch (error) {
+      console.error('Reset password error:', error);
       next(error);
     }
   }

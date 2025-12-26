@@ -43,6 +43,7 @@ router.get('/analytics/tenants/growth', SuperAdminController.getTenantGrowth);
 
 // System management
 router.get('/system/health', SuperAdminController.getSystemHealth);
+router.get('/system/performance', SuperAdminController.getPerformanceMetrics);
 router.post('/system/backup', SuperAdminController.triggerBackup);
 router.get('/system/settings', SuperAdminController.getSystemSettings);
 router.put('/system/settings', SuperAdminController.updateSystemSettings);
