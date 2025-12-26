@@ -10,7 +10,8 @@ const migrations = [
   '003_add_max_warehouses.sql',
   '004_add_superadmin_avatar_url.sql',
   '005_add_notification_tables.sql',
-  '006_add_collections_tables.sql'
+  '006_add_collections_tables.sql',
+  '007_add_password_reset_fields.sql'
 ];
 
 async function runAllMigrations() {
