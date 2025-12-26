@@ -22,11 +22,13 @@ import {
 import {
   Assessment as ReportsIcon,
   Print as PrintIcon,
+  GetApp as DownloadIcon,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import reportService from '../services/reportService';
 import userService from '../services/userService';
 import { formatCurrency } from '../utils/currency';
+import { exportReportToCSV } from '../utils/csvExport';
 
 function Reports() {
   const theme = useTheme();
@@ -125,6 +127,7 @@ function Reports() {
       setAllReportsData(null); // Clear all reports data when generating specific report
 
       const filters = buildFilters();
+      console.log('[Reports] Generating report:', { reportType, filters });
 
       let response;
       if (reportType === 'sales') {
@@ -139,10 +142,16 @@ function Reports() {
         response = await reportService.getProductsReport(filters);
       }
 
+      console.log('[Reports] Report data received:', response);
       setData(response || {});
+      toast.success('Report generated successfully');
     } catch (error) {
-      console.error('Failed to load report:', error);
-      toast.error(error.response?.data?.error || 'Failed to load report');
+      console.error('[Reports] Failed to load report:', error);
+      const errorMessage = error.response?.data?.error 
+        || error.response?.data?.message 
+        || error.message 
+        || 'Failed to load report. Please check your connection and try again.';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -1200,8 +1209,26 @@ function Reports() {
                 onClick={handlePrintAllReports}
                 disabled={loading || loadingAll}
                 size={isSmallScreen ? 'small' : 'medium'}
+                sx={{ mb: 1 }}
               >
                 Print all reports
+              </Button>
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<DownloadIcon />}
+                onClick={() => {
+                  if (data) {
+                    exportReportToCSV(data, reportType, dateRange === 'custom' ? `${customStart}-${customEnd}` : dateRange);
+                    toast.success('Report exported to CSV');
+                  } else {
+                    toast.info('Please generate a report first');
+                  }
+                }}
+                disabled={loading || loadingAll || !data}
+                size={isSmallScreen ? 'small' : 'medium'}
+              >
+                Export to CSV
               </Button>
             </Stack>
           </Paper>

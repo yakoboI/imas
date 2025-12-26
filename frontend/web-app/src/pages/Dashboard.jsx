@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Grid, Paper, Typography, Box, CircularProgress, GlobalStyles } from '@mui/material';
+import { Grid, Paper, Typography, Box, CircularProgress, GlobalStyles, IconButton, Tooltip } from '@mui/material';
 import {
   Inventory,
   ShoppingCart,
@@ -8,11 +8,17 @@ import {
   PendingActions,
   ReceiptLong,
   Warning,
+  Refresh,
 } from '@mui/icons-material';
 import dashboardService from '../services/dashboardService';
 import tenantSettingsService from '../services/tenantSettingsService';
 import { toast } from 'react-toastify';
 import { formatCurrency } from '../utils/currency';
+import ActivityFeed from '../components/ActivityFeed';
+import CostSavingsCalculator from '../components/CostSavingsCalculator';
+import RevenueChart from '../components/charts/RevenueChart';
+import OrdersChart from '../components/charts/OrdersChart';
+import StatusDistributionChart from '../components/charts/StatusDistributionChart';
 
 
 function Dashboard() {
@@ -30,18 +36,54 @@ function Dashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [currency, setCurrency] = useState('USD');
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [chartData, setChartData] = useState({
+    revenueByDate: [],
+    ordersByDate: [],
+    ordersByStatus: [],
+    paymentMethods: [],
+  });
+  const [chartLoading, setChartLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardStats();
     loadSettings();
+    loadChartData();
     
-    // Refresh dashboard stats every 30 seconds to keep alerts updated
+    // Refresh dashboard stats every 10 seconds for near real-time updates
     const interval = setInterval(() => {
       loadDashboardStats();
-    }, 30000);
+    }, 10000);
     
     return () => clearInterval(interval);
   }, []);
+
+  const loadChartData = async () => {
+    try {
+      setChartLoading(true);
+      const response = await dashboardService.getChartData(30); // Last 30 days
+      if (response) {
+        setChartData({
+          revenueByDate: response.revenueByDate || [],
+          ordersByDate: response.ordersByDate || [],
+          ordersByStatus: response.ordersByStatus || [],
+          paymentMethods: response.paymentMethods || [],
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load chart data:', error);
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await loadDashboardStats();
+    setRefreshing(false);
+    setLastRefresh(new Date());
+  };
 
   const loadSettings = async () => {
     try {
@@ -71,11 +113,14 @@ function Dashboard() {
           totalReceipts: parseInt(response.stats.totalReceipts) || 0,
         };
         setStats(processedStats);
+        setLastRefresh(new Date());
       }
     } catch (error) {
       if (error.response?.status !== 404) {
         console.error('Failed to load dashboard stats:', error);
-        toast.error('Failed to load dashboard statistics');
+        if (!refreshing) {
+          toast.error('Failed to load dashboard statistics');
+        }
       }
     } finally {
       setLoading(false);
@@ -172,13 +217,44 @@ function Dashboard() {
           },
         }}
       />
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-          Dashboard
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Overview of your business metrics and statistics
-        </Typography>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+            Dashboard
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Overview of your business metrics and statistics
+            {lastRefresh && (
+              <span style={{ marginLeft: '8px', fontSize: '0.75rem' }}>
+                • Last updated: {lastRefresh.toLocaleTimeString()}
+              </span>
+            )}
+          </Typography>
+        </Box>
+        <Tooltip title="Refresh dashboard data">
+          <IconButton
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              },
+              '&:disabled': {
+                bgcolor: 'action.disabledBackground',
+              },
+            }}
+          >
+            <Refresh sx={{ 
+              animation: refreshing ? 'spin 1s linear infinite' : 'none',
+              '@keyframes spin': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
+            }} />
+          </IconButton>
+        </Tooltip>
       </Box>
       <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mt: 2 }}>
         {statCards.map((stat, index) => (
@@ -298,6 +374,47 @@ function Dashboard() {
           </Grid>
         ))}
       </Grid>
+
+      {/* Charts Section */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+          Analytics & Trends
+        </Typography>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} md={8}>
+            <RevenueChart data={chartData.revenueByDate} currency={currency} />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <StatusDistributionChart
+              data={chartData.ordersByStatus}
+              title="Orders by Status"
+              currency={currency}
+            />
+          </Grid>
+          <Grid item xs={12} md={8}>
+            <OrdersChart data={chartData.ordersByDate} currency={currency} />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <StatusDistributionChart
+              data={chartData.paymentMethods}
+              title="Payment Methods"
+              currency={currency}
+            />
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* Activity Feed Section */}
+      <Box sx={{ mt: 4 }}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <ActivityFeed limit={5} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <CostSavingsCalculator />
+          </Grid>
+        </Grid>
+      </Box>
     </Box>
   );
 }

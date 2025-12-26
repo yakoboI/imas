@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -164,31 +165,53 @@ console.error = (...args) => {
   originalError.apply(console, args);
 };
 
+// CRITICAL: Prevent any redirects on initial load if we're on the landing page
+// This ensures the landing page always shows, even with invalid tokens
+const currentPath = window.location.pathname;
+const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
+
+if (publicPaths.includes(currentPath)) {
+  // We're on a public path - clear any invalid tokens but don't redirect
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+  
+  // If we have a token but no user, or if token seems invalid, clear it
+  // But don't redirect - let the page load normally
+  if (token && !user) {
+    console.log('[Main] Clearing invalid token (no user data)');
+    localStorage.removeItem('token');
+  }
+}
+
+console.log('[Main] Initializing app, current path:', currentPath);
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true
-        }}
-      >
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <App />
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-          />
-        </ThemeProvider>
-      </BrowserRouter>
+      <HelmetProvider>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true
+          }}
+        >
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <App />
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+            />
+          </ThemeProvider>
+        </BrowserRouter>
+      </HelmetProvider>
     </Provider>
   </React.StrictMode>
 );

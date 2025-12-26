@@ -48,10 +48,22 @@ export const register = createAsyncThunk(
   }
 );
 
+// Helper to safely parse JSON from localStorage
+const safeParseJSON = (key, defaultValue = null) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (e) {
+    return defaultValue;
+  }
+};
+
 const initialState = {
-  user: JSON.parse(localStorage.getItem('user')) || null,
+  user: safeParseJSON('user'),
   token: localStorage.getItem('token') || null,
-  isAuthenticated: !!localStorage.getItem('token'),
+  // Only set isAuthenticated to true if we have BOTH token and user
+  // This prevents false positives from stale tokens
+  isAuthenticated: !!(localStorage.getItem('token') && safeParseJSON('user')),
   loading: false,
   error: null,
 };

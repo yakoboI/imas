@@ -130,7 +130,7 @@ function Users() {
   };
 
   if (user?.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/app/dashboard" replace />;
   }
 
   const filteredUsers = users.filter((u) =>

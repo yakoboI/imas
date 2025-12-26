@@ -1,9 +1,22 @@
-// Service Worker for Push Notifications
+// Service Worker for Push Notifications and PWA
 const CACHE_NAME = 'inventory-system-v1';
+const STATIC_CACHE_NAME = 'imas-static-v1';
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing...');
+  event.waitUntil(
+    caches.open(STATIC_CACHE_NAME).then((cache) => {
+      // Cache essential static assets
+      return cache.addAll([
+        '/',
+        '/index.html',
+        '/manifest.json',
+      ]).catch((err) => {
+        console.log('Some static assets failed to cache:', err);
+      });
+    })
+  );
   self.skipWaiting();
 });
 
@@ -14,12 +27,51 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name !== CACHE_NAME && name !== STATIC_CACHE_NAME)
           .map((name) => caches.delete(name))
       );
     })
   );
   return self.clients.claim();
+});
+
+// Fetch event - serve from cache, fallback to network
+self.addEventListener('fetch', (event) => {
+  // Only cache GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
+  // Skip cross-origin requests
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      // Return cached version or fetch from network
+      if (response) {
+        return response;
+      }
+      
+      return fetch(event.request).then((response) => {
+        // Don't cache if not a valid response
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+
+        // Clone the response
+        const responseToCache = response.clone();
+
+        // Cache the response
+        caches.open(STATIC_CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+
+        return response;
+      });
+    })
+  );
 });
 
 // Push event - handle incoming push notifications

@@ -4,9 +4,14 @@ import { useSelector } from 'react-redux';
 import { Box } from '@mui/material';
 
 import Layout from './components/layout/Layout';
+import Landing from './pages/Landing';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import InstallPrompt from './components/InstallPrompt';
+import { registerServiceWorker } from './utils/pushNotifications';
 import Profile from './pages/Profile/ViewProfile';
 import EditProfile from './pages/Profile/EditProfile';
 import ChangePassword from './pages/Profile/ChangePassword';
@@ -31,22 +36,47 @@ function PrivateRoute({ children }) {
 }
 
 function App() {
+  // Register service worker on app load
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      registerServiceWorker().catch(console.error);
+    }
+  }, []);
+
+  // Debug: Log current route and prevent any redirects
+  React.useEffect(() => {
+    const currentPath = window.location.pathname;
+    console.log('[App] Current pathname:', currentPath);
+    console.log('[App] Routes configured - Landing page should be at /');
+    
+    // If we're on root path, ensure we stay there
+    if (currentPath === '/') {
+      console.log('[App] On root path - Landing page should render');
+    }
+  }, []);
+
   return (
-    <Routes>
-      {/* Public Routes */}
+    <>
+      <InstallPrompt />
+      <Routes>
+      {/* Public Routes - Landing page is PUBLIC, no authentication required */}
+      {/* IMPORTANT: This route must be first and must NOT have any authentication checks */}
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Protected Routes */}
       <Route
-        path="/"
+        path="/app"
         element={
           <PrivateRoute>
             <Layout />
           </PrivateRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         
         {/* Profile Routes */}
@@ -71,9 +101,13 @@ function App() {
         <Route path="users" element={<Users />} />
       </Route>
 
-      {/* 404 */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* Redirect authenticated users from root to app */}
+      <Route path="/dashboard" element={<PrivateRoute><Navigate to="/app/dashboard" replace /></PrivateRoute>} />
+
+      {/* 404 - redirect to landing page */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }
 

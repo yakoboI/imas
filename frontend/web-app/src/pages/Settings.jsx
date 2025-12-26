@@ -48,6 +48,10 @@ function Settings() {
     logo: '',
     taxId: ''
   });
+  const [tenant, setTenant] = useState({
+    name: '',
+    subdomain: ''
+  });
 
   useEffect(() => {
     loadSettings();
@@ -75,6 +79,9 @@ function Settings() {
           companyPhone: response.company.phone || '',
           companyAddress: response.company.address || '',
         }));
+      }
+      if (response.tenant) {
+        setTenant(response.tenant);
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -150,6 +157,34 @@ function Settings() {
                   </Typography>
                 </Grid>
               )}
+              {/* Tenant Name and Subdomain - Read Only */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Company Name (Organization)"
+                  value={tenant.name || 'N/A'}
+                  disabled
+                  helperText="Set during registration and cannot be changed"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Subdomain"
+                  value={tenant.subdomain || 'N/A'}
+                  disabled
+                  helperText="Unique identifier set during registration"
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+              </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
@@ -157,6 +192,7 @@ function Settings() {
                   value={settings.companyName}
                   onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
                   disabled={!isAdmin}
+                  helperText="Business/legal company name"
                 />
               </Grid>
               <Grid item xs={12} sm={6}>

@@ -23,6 +23,7 @@ import {
 import { logout } from '../../store/slices/authSlice';
 import { uploadAvatar } from '../../store/slices/userSlice';
 import { toast } from 'react-toastify';
+import InstallButton from '../InstallButton';
 
 function Navbar({ onMenuClick }) {
   const navigate = useNavigate();
@@ -47,12 +48,12 @@ function Navbar({ onMenuClick }) {
   };
 
   const handleProfile = () => {
-    navigate('/profile');
+    navigate('/app/profile');
     handleMenuClose();
   };
 
   const handleSettings = () => {
-    navigate('/settings');
+    navigate('/app/settings');
     handleMenuClose();
   };
 
@@ -114,9 +115,10 @@ function Navbar({ onMenuClick }) {
           <MenuIcon />
         </IconButton>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Inventory Management System
+          IMAS
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <InstallButton />
           <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
             {user?.firstName} {user?.lastName}
           </Typography>

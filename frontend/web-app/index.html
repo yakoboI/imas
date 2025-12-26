@@ -2,12 +2,80 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Inventory Management System</title>
+    
+    <!-- Primary Meta Tags -->
+    <title>IMAS - Inventory Management</title>
+    <meta name="title" content="IMAS - Inventory Management" />
+    <meta name="description" content="Manage inventory, products, orders, and warehouses. Real-time analytics and reporting for your business." />
+    <meta name="keywords" content="inventory management, stock management, warehouse management, inventory system, order management, business management software, inventory tracking, multitenant inventory, business operations, inventory control" />
+    <meta name="author" content="Adventora" />
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="English" />
+    <meta name="revisit-after" content="7 days" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://app.adventora.store/" />
+    <meta property="og:title" content="IMAS - Inventory Management" />
+    <meta property="og:description" content="Manage inventory, products, orders, and warehouses. Real-time analytics and reporting for your business." />
+    <meta property="og:image" content="https://app.adventora.store/og-image.jpg" />
+    <meta property="og:site_name" content="IMAS" />
+    <meta property="og:locale" content="en_US" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://app.adventora.store/" />
+    <meta name="twitter:title" content="IMAS - Inventory Management" />
+    <meta name="twitter:description" content="Manage inventory, products, orders, and warehouses. Real-time analytics and reporting." />
+    <meta name="twitter:image" content="https://app.adventora.store/og-image.jpg" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://app.adventora.store/" />
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#1976d2" />
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="IMAS" />
   </head>
   <body>
     <div id="root"></div>
+    <!-- CRITICAL: Clear invalid tokens before React loads -->
+    <script>
+      // This runs BEFORE React loads to clear invalid tokens
+      (function() {
+        const currentPath = window.location.pathname;
+        const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
+        
+        console.log('[Pre-React] Current path:', currentPath);
+        
+        // If we're on a public path, clear invalid tokens
+        if (publicPaths.includes(currentPath)) {
+          console.log('[Pre-React] On public path - clearing invalid tokens if any');
+          
+          // Clear any invalid tokens but don't redirect
+          const token = localStorage.getItem('token');
+          const user = localStorage.getItem('user');
+          
+          if (token && !user) {
+            console.log('[Pre-React] Clearing invalid token (no user data)');
+            localStorage.removeItem('token');
+          }
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -28,6 +28,7 @@ import {
   Login as LoginIcon,
 } from '@mui/icons-material';
 import { login, clearError } from '../../store/slices/authSlice';
+import SEO from '../../components/SEO';
 
 function Login() {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate('/app/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
@@ -145,8 +146,15 @@ function Login() {
   const isFormValid = !validationErrors.email && !validationErrors.password && formData.email && formData.password;
 
   return (
-    <Box
-      sx={{
+    <>
+      <SEO
+        title="Login - Sign In"
+        description="Sign in to your IMAS inventory management account. Access your dashboard, manage inventory, track orders, and streamline your business operations."
+        keywords="login, sign in, inventory management login, business software login, access account"
+        url="/login"
+      />
+      <Box
+        sx={{
         minHeight: '100vh',
         display: 'flex',
         alignItems: { xs: 'flex-start', sm: 'center' },
@@ -446,6 +454,7 @@ function Login() {
         </Fade>
       </Container>
     </Box>
+    </>
   );
 }
 

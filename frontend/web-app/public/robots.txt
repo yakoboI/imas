@@ -1,0 +1,26 @@
+# robots.txt for IMAS Web App
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /register
+
+# Disallow protected routes (they require authentication anyway)
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /products
+Disallow: /categories
+Disallow: /inventory
+Disallow: /sales
+Disallow: /orders
+Disallow: /receipts
+Disallow: /warehouses
+Disallow: /customers
+Disallow: /suppliers
+Disallow: /audit-logs
+Disallow: /reports
+Disallow: /settings
+Disallow: /users
+
+# Sitemap location
+Sitemap: https://app.adventora.store/sitemap.xml
+

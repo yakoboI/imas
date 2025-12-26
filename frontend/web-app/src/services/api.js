@@ -13,9 +13,17 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Don't add token for public endpoints or if we're on a public page
+    const currentPath = window.location.pathname;
+    const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
+    
+    // Only add token if we're NOT on a public page
+    // This prevents invalid tokens from being sent on public pages
+    if (!publicPaths.includes(currentPath)) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -29,10 +37,38 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
+      // Unauthorized - clear token
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      
+      // Get current path
+      const currentPath = window.location.pathname;
+      
+      // Define public paths that should NEVER redirect
+      const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
+      
+      // CRITICAL: Never redirect from public pages
+      // Check if we're on a public path FIRST - if so, NEVER redirect
+      const isPublicPath = publicPaths.includes(currentPath);
+      
+      if (isPublicPath) {
+        // We're on a public page - do NOT redirect, just clear tokens
+        console.log(`[API Interceptor] 401 on public page "${currentPath}" - clearing tokens, NOT redirecting`);
+        return Promise.reject(error);
+      }
+      
+      // Only redirect if we're on a protected route (not a public page)
+      const isProtectedRoute = currentPath.startsWith('/app') || currentPath === '/dashboard';
+      
+      if (isProtectedRoute) {
+        console.log(`[API Interceptor] 401 on protected route "${currentPath}" - redirecting to login`);
+        window.location.href = '/login';
+      } else {
+        // Unknown/other path - don't redirect, just clear tokens
+        console.log(`[API Interceptor] 401 on unknown path "${currentPath}" - clearing tokens, NOT redirecting`);
+      }
+      
+      return Promise.reject(error);
     }
     if (error.response?.status === 503) {
       // Service Unavailable - Maintenance mode

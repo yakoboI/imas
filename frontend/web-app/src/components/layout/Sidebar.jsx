@@ -24,63 +24,70 @@ import {
   History,
   Category,
   PointOfSale,
+  PersonAdd,
 } from '@mui/icons-material';
 
 // Central definition of what each role can see in the sidebar
 // (backend still enforces data-level permissions)
 const menuItems = [
   // Everyone gets Dashboard
-  { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
+  { text: 'Dashboard', icon: <Dashboard />, path: '/app/dashboard' },
 
   // Sales-related
   {
     text: 'Sales',
     icon: <PointOfSale />,
-    path: '/sales',
+    path: '/app/sales',
     roles: ['admin', 'sales_manager', 'sales_staff', 'accountant', 'viewer'],
   },
   {
     text: 'Orders',
     icon: <ShoppingCart />,
-    path: '/orders',
+    path: '/app/orders',
     roles: ['admin', 'sales_manager', 'sales_staff', 'accountant'],
   },
   {
     text: 'Receipts',
     icon: <Receipt />,
-    path: '/receipts',
+    path: '/app/receipts',
     roles: ['admin', 'sales_manager', 'sales_staff', 'accountant'],
+  },
+  {
+    text: 'Customers',
+    icon: <PersonAdd />,
+    path: '/app/customers',
+    roles: ['admin', 'sales_manager', 'sales_staff', 'accountant', 'viewer'],
   },
 
   // Inventory-related
   {
     text: 'Products',
     icon: <Inventory />,
-    path: '/products',
+    path: '/app/products',
     roles: ['admin', 'inventory_manager', 'inventory_staff', 'viewer'],
   },
   {
     text: 'Categories',
     icon: <Category />,
-    path: '/categories',
+    path: '/app/categories',
     roles: ['admin', 'inventory_manager', 'inventory_staff'],
   },
   {
     text: 'Inventory',
     icon: <Warehouse />,
-    path: '/inventory',
+    path: '/app/inventory',
     roles: ['admin', 'inventory_manager', 'inventory_staff'],
   },
   {
     text: 'Warehouses',
     icon: <Warehouse />,
-    path: '/warehouses',
+    path: '/app/warehouses',
     roles: ['admin', 'inventory_manager', 'inventory_staff'],
   },
   {
     text: 'Suppliers',
     icon: <LocalShipping />,
-    path: '/suppliers',
+    path: '/app/suppliers',
     roles: ['admin', 'inventory_manager', 'inventory_staff'],
   },
 
@@ -88,13 +95,13 @@ const menuItems = [
   {
     text: 'Reports',
     icon: <Assessment />,
-    path: '/reports',
+    path: '/app/reports',
     roles: ['admin', 'sales_manager', 'inventory_manager', 'accountant', 'viewer'],
   },
   {
     text: 'Audit Logs',
     icon: <History />,
-    path: '/audit-logs',
+    path: '/app/audit-logs',
     roles: ['admin'],
   },
 
@@ -102,7 +109,7 @@ const menuItems = [
   {
     text: 'Users',
     icon: <People />,
-    path: '/users',
+    path: '/app/users',
     roles: ['admin'],
   },
 
@@ -110,7 +117,7 @@ const menuItems = [
   {
     text: 'Settings',
     icon: <Settings />,
-    path: '/settings',
+    path: '/app/settings',
     roles: ['admin', 'sales_manager', 'inventory_manager'],
   },
 ];
@@ -154,7 +161,7 @@ function Sidebar({ onItemClick }) {
       <Divider sx={{ my: 2 }} />
       <List>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleItemClick('/profile')}>
+          <ListItemButton onClick={() => handleItemClick('/app/profile')}>
             <ListItemIcon>
               <Person />
             </ListItemIcon>
