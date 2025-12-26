@@ -4,14 +4,14 @@ const SEO = ({
   title = 'IMAS - Inventory Management',
   description = 'Manage inventory, products, orders, and warehouses. Real-time analytics and reporting for your business.',
   keywords = 'inventory management, stock management, warehouse management, inventory system, order management, business management software',
-  image = 'https://app.adventora.store/og-image.jpg',
-  url = 'https://app.adventora.store',
+  image = 'https://app.inventora.store/og-image.jpg',
+  url = 'https://app.inventora.store',
   type = 'website',
   noindex = false,
 }) => {
   // Keep titles concise - max 60 characters for browser tabs
   const fullTitle = title.includes('IMAS') ? title : `${title} | IMAS`;
-  const fullUrl = url.startsWith('http') ? url : `https://app.adventora.store${url}`;
+  const fullUrl = url.startsWith('http') ? url : `https://app.inventora.store${url}`;
 
   return (
     <Helmet>
@@ -63,7 +63,7 @@ const SEO = ({
           publisher: {
             '@type': 'Organization',
             name: 'Adventora',
-            url: 'https://app.adventora.store',
+            url: 'https://app.inventora.store',
           },
         })}
       </script>

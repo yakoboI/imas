@@ -15,7 +15,7 @@ class PushNotificationService {
     }
 
     webpush.setVapidDetails(
-      process.env.VAPID_SUBJECT || 'mailto:admin@inventorysystem.com',
+      process.env.VAPID_SUBJECT || 'mailto:admin@inventora.store',
       process.env.VAPID_PUBLIC_KEY,
       process.env.VAPID_PRIVATE_KEY
     );

@@ -22,5 +22,5 @@ Disallow: /settings
 Disallow: /users
 
 # Sitemap location
-Sitemap: https://app.adventora.store/sitemap.xml
+Sitemap: https://app.inventora.store/sitemap.xml
 

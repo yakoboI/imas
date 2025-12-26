@@ -2,84 +2,84 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Public Pages -->
   <url>
-    <loc>https://app.adventora.store/</loc>
+    <loc>https://app.inventora.store/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/login</loc>
+    <loc>https://app.inventora.store/login</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/register</loc>
+    <loc>https://app.inventora.store/register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   
   <!-- Protected Routes (included for completeness, but require authentication) -->
   <url>
-    <loc>https://app.adventora.store/dashboard</loc>
+    <loc>https://app.inventora.store/dashboard</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/products</loc>
+    <loc>https://app.inventora.store/products</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/categories</loc>
+    <loc>https://app.inventora.store/categories</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/inventory</loc>
+    <loc>https://app.inventora.store/inventory</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/sales</loc>
+    <loc>https://app.inventora.store/sales</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/orders</loc>
+    <loc>https://app.inventora.store/orders</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/receipts</loc>
+    <loc>https://app.inventora.store/receipts</loc>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/warehouses</loc>
+    <loc>https://app.inventora.store/warehouses</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/customers</loc>
+    <loc>https://app.inventora.store/customers</loc>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/suppliers</loc>
+    <loc>https://app.inventora.store/suppliers</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/reports</loc>
+    <loc>https://app.inventora.store/reports</loc>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/settings</loc>
+    <loc>https://app.inventora.store/settings</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://app.adventora.store/profile</loc>
+    <loc>https://app.inventora.store/profile</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

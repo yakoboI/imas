@@ -21,11 +21,11 @@ Project Settings:
 
 Environment Variable:
   • Name: VITE_API_URL
-  • Value: https://YOUR-BACKEND.up.railway.app/api
+  • Value: https://api.inventora.store/api
 
 After Deployment - Your Web App URL:
-https://imas-web-app.vercel.app
-(Replace with your actual URL after deployment)
+https://app.inventora.store
+(Production URL - Already configured)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔐 VERCEL - SUPERADMIN PORTAL
@@ -43,11 +43,11 @@ Project Settings:
 
 Environment Variable:
   • Name: VITE_API_URL
-  • Value: https://YOUR-BACKEND.up.railway.app/api
+  • Value: https://api.inventora.store/api
 
 After Deployment - Your SuperAdmin URL:
-https://imas-superadmin.vercel.app
-(Replace with your actual URL after deployment)
+https://admin.inventora.store
+(Production URL - Already configured)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚙️ RAILWAY - BACKEND ENVIRONMENT VARIABLES
@@ -57,29 +57,29 @@ After deploying both Vercel projects, update Railway backend:
 
 Variable 1:
   • Name: FRONTEND_URL
-  • Value: https://imas-web-app.vercel.app
-  (Replace with your actual web app URL)
+  • Value: https://app.inventora.store
+  (Production URL - MUST be set in Railway backend)
 
 Variable 2:
   • Name: SUPERADMIN_URL
-  • Value: https://imas-superadmin.vercel.app
-  (Replace with your actual superadmin URL)
+  • Value: https://admin.inventora.store
+  (Production URL - MUST be set in Railway backend)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ TESTING URLs
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Web App:
-https://imas-web-app.vercel.app
+Web App (Production):
+https://app.inventora.store
 
-SuperAdmin Portal:
-https://imas-superadmin.vercel.app
+SuperAdmin Portal (Production):
+https://admin.inventora.store
 
 Backend Health Check:
-https://YOUR-BACKEND.up.railway.app/health
+https://api.inventora.store/health
 
 Backend API Base:
-https://YOUR-BACKEND.up.railway.app/api
+https://api.inventora.store/api
 
 ═══════════════════════════════════════════════════════════════
 

@@ -1,0 +1,8 @@
+# robots.txt for IMAS SuperAdmin Portal
+User-agent: *
+# Disallow all crawlers - this is an admin portal
+Disallow: /
+
+# Sitemap location (for reference, though not publicly accessible)
+Sitemap: https://admin.inventora.store/sitemap.xml
+
