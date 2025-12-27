@@ -8,6 +8,13 @@ import {
   Grid,
   Card,
   CardContent,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   useTheme,
   useMediaQuery,
   Chip,
@@ -73,6 +80,52 @@ const benefits = [
   'Scalable architecture',
   'Mobile-first design',
   '24/7 cloud access',
+  'Role-based access controls (admin, managers, staff, viewer)',
+  'Audit logs + CSV export for accountability',
+  'Printable + downloadable receipt PDFs',
+  'Reports (sales, inventory, orders, products, customers) with CSV export',
+  'Low-stock monitoring with configurable thresholds',
+  'Tenant settings for currency, timezone, and date format',
+  'Installable PWA for faster load and basic offline-ready app shell',
+  'Optional push notifications (browser permission required)',
+];
+
+const comparisonRows = [
+  {
+    capability: 'Role-based access controls',
+    imas: 'Included (admin, managers, staff, viewer)',
+    others: 'Often limited, or requires higher-tier plans',
+  },
+  {
+    capability: 'Audit trail you can export',
+    imas: 'Included (audit logs + CSV export)',
+    others: 'Often missing or only available as an add-on',
+  },
+  {
+    capability: 'Receipts workflow',
+    imas: 'Included (generate, view, print, download PDF)',
+    others: 'Often requires templates, add-ons, or manual workarounds',
+  },
+  {
+    capability: 'Business reporting',
+    imas: 'Included (sales/inventory/orders/products/customers + CSV/print)',
+    others: 'Reports vary widely; exports are often restricted',
+  },
+  {
+    capability: 'Low-stock monitoring',
+    imas: 'Included (dashboard indicators + configurable threshold)',
+    others: 'Often basic alerts, not configurable per business process',
+  },
+  {
+    capability: 'Multi-warehouse operations',
+    imas: 'Included (warehouses module + centralized tracking)',
+    others: 'Commonly an add-on or limited by plan',
+  },
+  {
+    capability: 'Installable web app',
+    imas: 'Included (PWA install prompt + app-shell caching)',
+    others: 'Not always available; mobile usability can be inconsistent',
+  },
 ];
 
 function Landing() {
@@ -514,6 +567,91 @@ function Landing() {
               </Card>
             </Grid>
           </Grid>
+        </Container>
+      </Box>
+
+      {/* Comparison Section */}
+      <Box sx={{ py: { xs: 6, md: 8 }, bgcolor: '#fafbfc' }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: { xs: 4, md: 6 } }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 800,
+                mb: 1.5,
+                fontSize: { xs: '1.75rem', md: '2.5rem' },
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              How IMAS compares
+            </Typography>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ maxWidth: 800, mx: 'auto', fontSize: { xs: '1rem', md: '1.1rem' }, lineHeight: 1.8 }}
+            >
+              Built-in capabilities that often require extra modules, higher-tier plans, or manual work in many inventory tools.
+            </Typography>
+          </Box>
+
+          <TableContainer
+            component={Paper}
+            sx={{
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              overflowX: 'auto',
+              boxShadow: 'none',
+            }}
+          >
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Capability</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>In IMAS</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>In many tools</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {comparisonRows.map((row) => (
+                  <TableRow key={row.capability} hover>
+                    <TableCell sx={{ minWidth: 200 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        {row.capability}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 240 }}>
+                      <Stack direction="row" spacing={1.25} alignItems="center" sx={{ flexWrap: 'wrap' }}>
+                        <Chip
+                          label="Included"
+                          size="small"
+                          sx={{
+                            bgcolor: 'success.light',
+                            color: 'success.dark',
+                            fontWeight: 700,
+                          }}
+                        />
+                        <Typography variant="body2" color="text.secondary">
+                          {row.imas}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 240 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {row.others}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
+            Note: “In many tools” is a general comparison based on common market patterns; exact availability varies by vendor and plan.
+          </Typography>
         </Container>
       </Box>
 

@@ -482,7 +482,7 @@ function Sales() {
       if (error.response?.status !== 404 && error.response?.status !== 500) {
         console.error('Print error:', error);
       }
-      if (error.response?.status === 404 || error.response?.status === 500) {
+      if (error.response?.status === 404) {
         // If PDF doesn't exist, try to regenerate
         if (orderId) {
           toast.info('PDF not found. Attempting to generate receipt...');
@@ -496,7 +496,10 @@ function Sales() {
           toast.error('Receipt PDF is not available. Please generate the receipt first.');
         }
       } else if (error.response?.status === 500) {
-        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to generate receipt PDF. Please try again.';
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          'Failed to generate receipt PDF. Please try again.';
         toast.error(errorMessage);
       } else {
         const errorMessage = error.response?.data?.error || error.message || 'Failed to print receipt';
@@ -548,7 +551,7 @@ function Sales() {
       if (error.response?.status !== 404 && error.response?.status !== 500) {
         console.error('Download error:', error);
       }
-      if (error.response?.status === 404 || error.response?.status === 500) {
+      if (error.response?.status === 404) {
         // If PDF doesn't exist, try to regenerate
         if (orderId) {
           toast.info('PDF not found. Attempting to generate receipt...');
@@ -562,7 +565,10 @@ function Sales() {
           toast.error('Receipt PDF is not available. Please generate the receipt first.');
         }
       } else if (error.response?.status === 500) {
-        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to generate receipt PDF. Please try again.';
+        const errorMessage =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          'Failed to generate receipt PDF. Please try again.';
         toast.error(errorMessage);
       } else {
         const errorMessage = error.response?.data?.error || error.message || 'Failed to download receipt';
