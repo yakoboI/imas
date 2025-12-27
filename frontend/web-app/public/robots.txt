@@ -1,25 +1,17 @@
-# robots.txt for IMAS Web App
 User-agent: *
+
+# Public pages
 Allow: /
 Allow: /login
 Allow: /register
+Allow: /forgot-password
+Allow: /reset-password
 
-# Disallow protected routes (they require authentication anyway)
+# Private application (all authenticated)
+Disallow: /app
+
+# Legacy/redirecting entry points (avoid "soft 404" indexing)
 Disallow: /dashboard
-Disallow: /profile
-Disallow: /products
-Disallow: /categories
-Disallow: /inventory
-Disallow: /sales
-Disallow: /orders
-Disallow: /receipts
-Disallow: /warehouses
-Disallow: /customers
-Disallow: /suppliers
-Disallow: /audit-logs
-Disallow: /reports
-Disallow: /settings
-Disallow: /users
 
 # Sitemap location
 Sitemap: https://app.inventora.store/sitemap.xml
