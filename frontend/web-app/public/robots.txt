@@ -1,8 +1,16 @@
 # robots.txt for IMAS Web App
+# Allow all search engines including Bing
 User-agent: *
 Allow: /
 Allow: /login
 Allow: /register
+
+# Bing-specific crawler
+User-agent: Bingbot
+Allow: /
+Allow: /login
+Allow: /register
+Crawl-delay: 0
 
 # Disallow protected routes (they require authentication anyway)
 Disallow: /dashboard

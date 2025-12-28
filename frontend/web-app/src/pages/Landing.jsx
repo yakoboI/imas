@@ -133,6 +133,7 @@ function Landing() {
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           <Box sx={{ textAlign: 'center', maxWidth: '800px', mx: 'auto' }}>
             <Typography
+              component="h1"
               variant="h1"
               sx={{
                 fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
