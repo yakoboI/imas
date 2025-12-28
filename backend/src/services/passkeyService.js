@@ -12,9 +12,21 @@ const AuthService = require('./authService');
 
 // Get Relying Party info from environment or use defaults
 const rpName = process.env.RP_NAME || 'IMAS Inventory System';
-const rpID = process.env.RP_ID || (process.env.NODE_ENV === 'production' 
-  ? process.env.DOMAIN?.replace(/^https?:\/\//, '').replace(/\/$/, '') || 'localhost'
-  : 'localhost');
+
+// Helper function to extract domain from URL (remove protocol and trailing slash)
+const extractDomain = (url) => {
+  if (!url) return null;
+  return url.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0];
+};
+
+// RP ID must be just the domain name (no protocol, no path)
+const rpID = process.env.RP_ID 
+  ? extractDomain(process.env.RP_ID) 
+  : (process.env.NODE_ENV === 'production' 
+    ? extractDomain(process.env.DOMAIN) || extractDomain(process.env.FRONTEND_URL) || 'localhost'
+    : 'localhost');
+
+// Origin must be the full URL with protocol
 const origin = process.env.ORIGIN || (process.env.NODE_ENV === 'production'
   ? process.env.FRONTEND_URL || 'http://localhost:3000'
   : 'http://localhost:3000');
@@ -55,7 +67,7 @@ class PasskeyService {
         type: 'public-key'
       })),
       authenticatorSelection: {
-        authenticatorAttachment: 'platform', // Prefer platform authenticators (TouchID, FaceID, Windows Hello)
+        // Allow both platform (TouchID, FaceID, Windows Hello) and cross-platform (USB keys) authenticators
         userVerification: 'preferred',
         requireResidentKey: false
       },
@@ -120,7 +132,6 @@ class PasskeyService {
         requireUserVerification: true
       });
     } catch (error) {
-      console.error('Passkey registration verification failed:', error);
       throw new Error(`Verification failed: ${error.message}`);
     }
 
@@ -275,7 +286,6 @@ class PasskeyService {
         requireUserVerification: true
       });
     } catch (error) {
-      console.error('Passkey authentication verification failed:', error);
       throw new Error(`Verification failed: ${error.message}`);
     }
 
