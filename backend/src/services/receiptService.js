@@ -11,6 +11,7 @@ const { getReceiptTemplate } = require('../utils/receiptTemplates');
 const handlebars = require('handlebars');
 const fs = require('fs').promises;
 const path = require('path');
+const TraApiService = require('./traApiService');
 
 class ReceiptService {
   // Generate receipt number
@@ -132,12 +133,35 @@ class ReceiptService {
     const pdfUrl = await this.uploadPDF(receipt.id, pdfBuffer, tenantId);
     await receipt.update({ pdf_url: pdfUrl });
 
+    // Submit invoice to TRA EFDMS if tenant has TRA integration enabled
+    try {
+      await this.submitReceiptToTra(receipt, tenantId, order);
+      // Reload receipt to get TRA fields after submission
+      await receipt.reload();
+    } catch (traError) {
+      // Log error but don't fail receipt generation
+      console.error('Failed to submit receipt to TRA:', traError);
+      // Error is already stored in receipt.tra_submission_error by submitReceiptToTra
+      // Reload receipt to get error field
+      await receipt.reload();
+    }
+
+    // Auto-sync to accounting software if integration is active
+    try {
+      await this.autoSyncToAccounting(receipt, tenantId);
+      await receipt.reload(); // Reload to get accounting sync fields
+    } catch (accountingError) {
+      console.error('Failed to auto-sync receipt to accounting:', accountingError);
+      // Don't fail receipt generation if accounting sync fails
+      await receipt.reload(); // Still reload to get error field if set
+    }
+
     // Send email if requested
     if (sendEmail && (customerEmail || order.customer?.email)) {
       await this.sendReceiptEmail(receipt, customerEmail || order.customer.email);
     }
 
-    // Reload receipt with items
+    // Reload receipt with items and TRA data
     return await Receipt.findOne({
       where: { id: receipt.id },
       include: [
@@ -328,6 +352,86 @@ class ReceiptService {
     };
   }
 
+  /**
+   * Submit receipt/invoice to TRA EFDMS
+   * This is called automatically when a receipt is generated (if tenant has TRA integration enabled)
+   */
+  static async submitReceiptToTra(receipt, tenantId, order) {
+    try {
+      // Reload receipt with items for TRA submission
+      const fullReceipt = await Receipt.findOne({
+        where: { id: receipt.id },
+        include: [
+          { model: ReceiptItem, as: 'items', include: [{ model: Product, as: 'product' }] },
+          { model: Customer, as: 'customer' },
+          { model: Tenant, as: 'tenant' }
+        ]
+      });
+
+      if (!fullReceipt) {
+        throw new Error('Receipt not found');
+      }
+
+      const tenant = fullReceipt.tenant;
+
+      // Check if tenant has TRA integration enabled and verified
+      if (!tenant.tra_verified || !tenant.tenant_tin || !tenant.vfd_serial_num) {
+        // TRA not configured or not verified - skip submission
+        return;
+      }
+
+      // Prepare invoice data for TRA submission
+      const invoiceData = {
+        items: fullReceipt.items.map(item => ({
+          description: item.description,
+          name: item.product?.name || item.description,
+          code: item.product?.sku || '',
+          sku: item.product?.sku || '',
+          quantity: item.quantity,
+          unitPrice: parseFloat(item.unit_price),
+          subtotal: parseFloat(item.subtotal),
+          taxRate: parseFloat(item.tax_rate || 0),
+          discount: 0 // Add discount support if needed
+        })),
+        subtotal: parseFloat(fullReceipt.total_amount) - parseFloat(fullReceipt.tax_amount || 0) - parseFloat(fullReceipt.discount_amount || 0),
+        tax: parseFloat(fullReceipt.tax_amount || 0),
+        discount: parseFloat(fullReceipt.discount_amount || 0),
+        total: parseFloat(fullReceipt.total_amount),
+        paymentMethod: fullReceipt.payment_method || 'cash',
+        customerName: fullReceipt.customer?.name || 'Walk-in Customer',
+        customerTin: fullReceipt.customer?.tax_id || ''
+      };
+
+      // Submit to TRA API
+      const traResponse = await TraApiService.submitInvoice(tenant, invoiceData);
+
+      if (traResponse.success) {
+        // Update receipt with TRA response data
+        await fullReceipt.update({
+          tra_receipt_number: traResponse.receiptNumber,
+          tra_qr_code: traResponse.qrCode,
+          tra_fiscal_code: traResponse.fiscalCode,
+          tra_submitted: true,
+          tra_submitted_at: new Date(),
+          tra_submission_error: null
+        });
+
+        console.log(`Receipt ${fullReceipt.receipt_number} submitted to TRA successfully. TRA Receipt: ${traResponse.receiptNumber}`);
+      } else {
+        throw new Error(traResponse.message || 'Failed to submit to TRA');
+      }
+    } catch (error) {
+      // Store error in receipt but don't throw (to allow receipt generation to complete)
+      await receipt.update({
+        tra_submitted: false,
+        tra_submission_error: error.message
+      });
+
+      // Re-throw so caller can handle if needed
+      throw error;
+    }
+  }
+
   // List receipts
   static async listReceipts(tenantId, filters = {}) {
     const {
@@ -384,6 +488,134 @@ class ReceiptService {
         totalPages: Math.ceil(count / limit)
       }
     };
+  }
+
+  /**
+   * Auto-sync receipt to accounting software if integration is active
+   */
+  static async autoSyncToAccounting(receipt, tenantId) {
+    try {
+      const IntegrationService = require('./integrations/integrationService');
+
+      // Check which accounting integrations are active
+      const quickbooksActive = await IntegrationService.isIntegrationActive(tenantId, 'quickbooks');
+      const xeroActive = await IntegrationService.isIntegrationActive(tenantId, 'xero');
+
+      // Skip if receipt already synced
+      if (receipt.synced_to_accounting) {
+        return;
+      }
+
+      // Prefer QuickBooks if both are active (or implement preference logic)
+      if (quickbooksActive) {
+        try {
+          await this.syncReceiptToQuickBooks(receipt, tenantId);
+          return;
+        } catch (qbError) {
+          console.error('QuickBooks sync failed, trying Xero:', qbError);
+          // Try Xero if QuickBooks fails
+        }
+      }
+
+      if (xeroActive) {
+        try {
+          await this.syncReceiptToXero(receipt, tenantId);
+        } catch (xeroError) {
+          console.error('Xero sync failed:', xeroError);
+          throw xeroError;
+        }
+      }
+    } catch (error) {
+      console.error('[ReceiptService] Error in autoSyncToAccounting:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync receipt to QuickBooks
+   */
+  static async syncReceiptToQuickBooks(receipt, tenantId) {
+    const QuickBooksService = require('./integrations/quickbooksService');
+
+    // Get receipt with items
+    const receiptWithItems = await receipt.reload({
+      include: [
+        { model: ReceiptItem, as: 'items', include: [{ model: Product, as: 'product' }] },
+        { model: Customer, as: 'customer' }
+      ]
+    });
+
+    // Map receipt to QuickBooks invoice format
+    const invoiceData = {
+      invoiceNumber: receiptWithItems.receipt_number,
+      customerEmail: receiptWithItems.customer?.email || '',
+      dueDate: receiptWithItems.issue_date.toISOString().split('T')[0],
+      items: receiptWithItems.items.map(item => ({
+        name: item.product?.name || 'Item',
+        quantity: parseFloat(item.quantity),
+        unitPrice: parseFloat(item.unit_price),
+        amount: parseFloat(item.subtotal),
+        description: item.product?.name || ''
+      }))
+    };
+
+    // Create invoice in QuickBooks
+    const qbResponse = await QuickBooksService.createInvoice(tenantId, invoiceData);
+
+    // Update receipt with accounting sync info
+    await receipt.update({
+      synced_to_accounting: true,
+      accounting_invoice_id: qbResponse.invoiceId,
+      accounting_synced_at: new Date(),
+      accounting_provider: 'quickbooks',
+      accounting_sync_error: null
+    });
+
+    return qbResponse;
+  }
+
+  /**
+   * Sync receipt to Xero
+   */
+  static async syncReceiptToXero(receipt, tenantId) {
+    const XeroService = require('./integrations/xeroService');
+
+    // Get receipt with items
+    const receiptWithItems = await receipt.reload({
+      include: [
+        { model: ReceiptItem, as: 'items', include: [{ model: Product, as: 'product' }] },
+        { model: Customer, as: 'customer' }
+      ]
+    });
+
+    // Map receipt to Xero invoice format
+    const invoiceData = {
+      invoiceNumber: receiptWithItems.receipt_number,
+      customerEmail: receiptWithItems.customer?.email || '',
+      invoiceDate: receiptWithItems.issue_date.toISOString().split('T')[0],
+      dueDate: receiptWithItems.issue_date.toISOString().split('T')[0],
+      items: receiptWithItems.items.map(item => ({
+        name: item.product?.name || 'Item',
+        quantity: parseFloat(item.quantity),
+        unitPrice: parseFloat(item.unit_price),
+        amount: parseFloat(item.subtotal),
+        description: item.product?.name || ''
+      }))
+    };
+
+    // Create invoice in Xero
+    const xeroResponse = await XeroService.createInvoice(tenantId, invoiceData);
+
+    // Update receipt with accounting sync info
+    await receipt.update({
+      synced_to_accounting: true,
+      accounting_invoice_id: xeroResponse.invoiceId,
+      accounting_synced_at: new Date(),
+      accounting_provider: 'xero',
+      accounting_sync_error: null
+    });
+
+    return xeroResponse;
   }
 }
 

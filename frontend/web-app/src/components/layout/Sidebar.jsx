@@ -25,6 +25,7 @@ import {
   Category,
   PointOfSale,
   PersonAdd,
+  Link as LinkIcon,
 } from '@mui/icons-material';
 
 // Central definition of what each role can see in the sidebar
@@ -119,6 +120,12 @@ const menuItems = [
     icon: <Settings />,
     path: '/app/settings',
     roles: ['admin', 'sales_manager', 'inventory_manager'],
+  },
+  {
+    text: 'Integrations',
+    icon: <LinkIcon />,
+    path: '/app/integrations',
+    roles: ['admin'],
   },
 ];
 

@@ -13,5 +13,9 @@ router.post('/logout', authenticate, AuthController.logout);
 router.post('/forgot-password', authLimiter, AuthController.forgotPassword);
 router.post('/reset-password', AuthController.resetPassword);
 
+// Passkey routes
+const passkeyRoutes = require('./passkey.routes');
+router.use('/passkey', passkeyRoutes);
+
 module.exports = router;
 

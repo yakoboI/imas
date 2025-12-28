@@ -179,7 +179,31 @@ class ReceiptController {
         return res.status(404).json({ error: 'Receipt not found' });
       }
 
-      res.send(receipt.html_content || 'Receipt preview not available');
+      // Regenerate HTML to ensure it's up-to-date with current receipt data
+      // This ensures the preview always shows the correct total amount
+      try {
+        const Receipt = require('../models/Receipt');
+        const receiptModel = await Receipt.findOne({
+          where: { id, tenant_id: tenantId }
+        });
+        
+        if (receiptModel) {
+          const { html } = await ReceiptService.generateReceiptDocument(
+            receiptModel,
+            receiptModel.template_type || 'thermal'
+          );
+          // Update stored HTML content for future use
+          await receiptModel.update({ html_content: html });
+          res.send(html);
+        } else {
+          // Fallback to stored HTML if receipt not found
+          res.send(receipt.html_content || 'Receipt preview not available');
+        }
+      } catch (regenerateError) {
+        console.error('Error regenerating receipt preview:', regenerateError);
+        // Fallback to stored HTML if regeneration fails
+        res.send(receipt.html_content || 'Receipt preview not available');
+      }
     } catch (error) {
       next(error);
     }

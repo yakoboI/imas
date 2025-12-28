@@ -10,6 +10,7 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 const checkMaintenanceMode = require('./middleware/maintenanceMode');
 const backupScheduler = require('./services/backupScheduler');
 const digestScheduler = require('./services/digestScheduler');
+const zReportScheduler = require('./services/zReportScheduler');
 
 // Load models and set up associations
 require('./models/index');
@@ -31,6 +32,8 @@ const orderRoutes = require('./routes/order.routes');
 const superadminRoutes = require('./routes/superadmin.routes');
 const tenantSettingsRoutes = require('./routes/tenantSettings.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const traIntegrationRoutes = require('./routes/traIntegration.routes');
+const integrationRoutes = require('./routes/integrations.routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -84,7 +87,9 @@ app.get('/', (req, res) => {
       audit: '/api/audit',
       dashboard: '/api/dashboard',
       superadmin: '/api/superadmin',
-      tenantSettings: '/api/tenant-settings'
+      tenantSettings: '/api/tenant-settings',
+      traIntegration: '/api/tra-integration',
+      integrations: '/api/integrations'
     },
     documentation: 'All routes require authentication except /api/auth'
   });
@@ -134,6 +139,8 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/tenant-settings', tenantSettingsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/tra-integration', traIntegrationRoutes);
+app.use('/api/integrations', integrationRoutes);
 // Profile routes - routes have /profile prefix, mount at /api (must be last to avoid conflicts)
 app.use('/api', userRoutes);
 
@@ -167,6 +174,10 @@ const startServer = async () => {
       // Start digest scheduler
       digestScheduler.start();
       console.log('✅ Daily digest scheduler started');
+      
+      // Start Z-Report scheduler
+      zReportScheduler.start();
+      console.log('✅ Z-Report scheduler started');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

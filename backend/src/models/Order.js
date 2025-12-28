@@ -50,12 +50,20 @@ const Order = sequelize.define('Order', {
     defaultValue: 0
   },
   payment_method: {
-    type: DataTypes.ENUM('cash', 'card', 'bank_transfer', 'mobile_money', 'credit'),
+    type: DataTypes.ENUM('cash', 'card', 'bank_transfer', 'mobile_money', 'credit', 'pesapal', 'flutterwave', 'dpo'),
     allowNull: true
   },
   payment_status: {
     type: DataTypes.ENUM('pending', 'paid', 'partial', 'refunded'),
     defaultValue: 'pending'
+  },
+  payment_reference: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  payment_gateway: {
+    type: DataTypes.STRING(50),
+    allowNull: true
   },
   notes: {
     type: DataTypes.TEXT,
@@ -81,7 +89,9 @@ const Order = sequelize.define('Order', {
     { fields: ['customer_id'] },
     { fields: ['order_date'] },
     { fields: ['status'] },
-    { fields: ['tenant_id', 'order_date'] }
+    { fields: ['tenant_id', 'order_date'] },
+    { fields: ['payment_reference'] },
+    { fields: ['payment_gateway'] }
   ]
 });
 

@@ -177,6 +177,14 @@ class AuditService {
         user_id: userId,
         tenant_id: tenantId
       },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'email', 'first_name', 'last_name'],
+          required: false
+        }
+      ],
       order: [['timestamp', 'DESC']],
       limit
     });
@@ -224,6 +232,30 @@ class AuditService {
 
     const totalLogs = await AuditLog.count({ where });
 
+    // Get unique active users count
+    const uniqueUserIdsResult = await AuditLog.findAll({
+      where: {
+        ...where,
+        user_id: { [Op.ne]: null }
+      },
+      attributes: [
+        [require('sequelize').fn('DISTINCT', require('sequelize').col('user_id')), 'user_id']
+      ],
+      raw: true
+    });
+    const activeUserIds = uniqueUserIdsResult
+      .map(u => u.user_id)
+      .filter(id => id !== null && id !== undefined);
+    const totalUsers = activeUserIds.length > 0 
+      ? await User.count({ 
+          where: { 
+            id: { [Op.in]: activeUserIds }, 
+            status: 'active',
+            tenant_id: tenantId
+          } 
+        })
+      : 0;
+
     const actionCounts = await AuditLog.findAll({
       where,
       attributes: [
@@ -244,10 +276,35 @@ class AuditService {
       raw: true
     });
 
+    // Calculate totals and convert arrays to objects
+    const totalActions = actionCounts.length;
+    const totalEntityTypes = entityTypeCounts.filter(e => e.entity_type).length;
+    
+    // Convert actionCounts array to object
+    const actionsByType = {};
+    actionCounts.forEach(item => {
+      if (item.action) {
+        actionsByType[item.action] = parseInt(item.count) || 0;
+      }
+    });
+
+    // Convert entityTypeCounts array to object
+    const entityTypesCount = {};
+    entityTypeCounts.forEach(item => {
+      if (item.entity_type) {
+        entityTypesCount[item.entity_type] = parseInt(item.count) || 0;
+      }
+    });
+
     return {
       totalLogs,
-      actionCounts,
-      entityTypeCounts
+      totalUsers,
+      totalActions,
+      totalEntityTypes,
+      actionCounts, // Keep for backward compatibility
+      entityTypeCounts, // Keep for backward compatibility
+      actionsByType,
+      entityTypesCount
     };
   }
 }

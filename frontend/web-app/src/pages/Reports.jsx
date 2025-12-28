@@ -49,6 +49,7 @@ function Reports() {
     { value: 'orders', label: 'Orders report' },
     { value: 'customers', label: 'Customers report' },
     { value: 'products', label: 'Products report' },
+    { value: 'comprehensive', label: 'Comprehensive report (All data)' },
   ];
 
   const dateRanges = [
@@ -140,6 +141,8 @@ function Reports() {
         response = await reportService.getCustomersReport(filters);
       } else if (reportType === 'products') {
         response = await reportService.getProductsReport(filters);
+      } else if (reportType === 'comprehensive') {
+        response = await reportService.getComprehensiveReport(filters);
       }
 
       console.log('[Reports] Report data received:', response);
@@ -957,6 +960,36 @@ function Reports() {
     );
   };
 
+  const renderComprehensiveReport = (reportData) => {
+    if (!reportData) return null;
+
+    // Comprehensive report includes all report types
+    return (
+      <Box>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+          Comprehensive Report - All Data
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          This report includes all available data across sales, inventory, orders, customers, and products.
+        </Typography>
+
+        {reportData.sales && renderSalesReport(reportData.sales)}
+        {reportData.inventory && renderInventoryReport(reportData.inventory)}
+        {reportData.orders && renderOrdersReport(reportData.orders)}
+        {reportData.customers && renderCustomersReport(reportData.customers)}
+        {reportData.products && renderProductsReport(reportData.products)}
+
+        {(!reportData.sales && !reportData.inventory && !reportData.orders && !reportData.customers && !reportData.products) && (
+          <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              No data available for comprehensive report
+            </Typography>
+          </Paper>
+        )}
+      </Box>
+    );
+  };
+
   const renderAllReports = () => {
     if (!allReportsData) return null;
 
@@ -1077,6 +1110,7 @@ function Reports() {
     if (reportType === 'orders') return renderOrdersReport(data);
     if (reportType === 'customers') return renderCustomersReport(data);
     if (reportType === 'products') return renderProductsReport(data);
+    if (reportType === 'comprehensive') return renderComprehensiveReport(data);
 
     return null;
   };

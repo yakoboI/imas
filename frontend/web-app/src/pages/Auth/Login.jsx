@@ -26,9 +26,12 @@ import {
   Visibility,
   VisibilityOff,
   Login as LoginIcon,
+  Fingerprint as FingerprintIcon,
 } from '@mui/icons-material';
 import { login, clearError } from '../../store/slices/authSlice';
 import SEO from '../../components/SEO';
+import passkeyService from '../../services/passkeyService';
+import authService from '../../services/authService';
 
 function Login() {
   const navigate = useNavigate();
@@ -46,6 +49,10 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [hasPasskeys, setHasPasskeys] = useState(false);
+  const [checkingPasskeys, setCheckingPasskeys] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -58,6 +65,41 @@ function Login() {
       dispatch(clearError());
     };
   }, [dispatch]);
+
+  // Check passkey support
+  useEffect(() => {
+    const supported = passkeyService.isSupported();
+    setPasskeySupported(supported);
+    if (!supported) {
+      console.log('Passkeys not supported in this browser');
+    }
+  }, []);
+
+  // Check if user has passkeys when email changes
+  useEffect(() => {
+    const checkUserPasskeys = async () => {
+      if (!formData.email || !validateEmail(formData.email) || !passkeySupported) {
+        setHasPasskeys(false);
+        return;
+      }
+
+      setCheckingPasskeys(true);
+      try {
+        const hasKeys = await passkeyService.checkPasskeys(formData.email);
+        setHasPasskeys(hasKeys);
+        console.log('Passkey check result:', hasKeys, 'for email:', formData.email);
+      } catch (error) {
+        console.error('Error checking passkeys:', error);
+        setHasPasskeys(false);
+      } finally {
+        setCheckingPasskeys(false);
+      }
+    };
+
+    // Debounce the check
+    const timer = setTimeout(checkUserPasskeys, 500);
+    return () => clearTimeout(timer);
+  }, [formData.email, passkeySupported]);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -141,6 +183,38 @@ function Login() {
 
   const handleTogglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handlePasskeyLogin = async () => {
+    if (!formData.email || !validateEmail(formData.email)) {
+      setValidationErrors({
+        ...validationErrors,
+        email: 'Please enter a valid email address'
+      });
+      return;
+    }
+
+    setPasskeyLoading(true);
+    dispatch(clearError());
+
+    try {
+      const result = await authService.passkeyLogin(formData.email);
+      
+      // Dispatch login action to update Redux state
+      dispatch({
+        type: 'auth/login/fulfilled',
+        payload: result
+      });
+
+      // Navigate will happen automatically via useEffect when isAuthenticated becomes true
+    } catch (error) {
+      dispatch({
+        type: 'auth/login/rejected',
+        payload: error.response?.data?.error || error.message || 'Passkey login failed'
+      });
+    } finally {
+      setPasskeyLoading(false);
+    }
   };
 
   const isFormValid = !validationErrors.email && !validationErrors.password && formData.email && formData.password;
@@ -393,6 +467,85 @@ function Login() {
                       Forgot password?
                     </Link>
                   </Box>
+                  
+                  {/* Passkey Login Button */}
+                  {checkingPasskeys && formData.email && !validationErrors.email && (
+                    <Box sx={{ textAlign: 'center', my: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Checking for passkeys...
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {passkeySupported && hasPasskeys && !validationErrors.email && formData.email && !checkingPasskeys && (
+                    <>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        my: 2,
+                        '&::before, &::after': {
+                          content: '""',
+                          flex: 1,
+                          borderBottom: '1px solid',
+                          borderColor: 'divider',
+                        },
+                        '&::before': { mr: 1 },
+                        '&::after': { ml: 1 },
+                      }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ px: 1 }}>
+                          OR
+                        </Typography>
+                      </Box>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        onClick={handlePasskeyLogin}
+                        disabled={passkeyLoading || checkingPasskeys || !formData.email || !!validationErrors.email}
+                        startIcon={passkeyLoading ? <CircularProgress size={20} /> : <FingerprintIcon />}
+                        sx={{
+                          mt: { xs: 1, sm: 1 },
+                          mb: { xs: 1.5, sm: 2 },
+                          py: { xs: 1.25, sm: 1.5 },
+                          borderRadius: 2,
+                          borderColor: 'primary.main',
+                          color: 'primary.main',
+                          fontSize: { xs: '0.9rem', sm: '1rem' },
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            borderColor: 'primary.dark',
+                            backgroundColor: 'primary.light',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.2)',
+                          },
+                          '&:disabled': {
+                            borderColor: 'rgba(0, 0, 0, 0.12)',
+                            color: 'rgba(0, 0, 0, 0.26)',
+                          },
+                        }}
+                      >
+                        {passkeyLoading ? 'Authenticating...' : 'Login with Passkey'}
+                      </Button>
+                    </>
+                  )}
+                  
+                  {passkeySupported && !hasPasskeys && formData.email && !validationErrors.email && !checkingPasskeys && (
+                    <Box sx={{ textAlign: 'center', my: 1 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                        💡 No passkeys registered. Login with password, then go to Profile → Passkeys to set one up.
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {!passkeySupported && (
+                    <Box sx={{ textAlign: 'center', my: 1 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                        Passkeys not supported in this browser
+                      </Typography>
+                    </Box>
+                  )}
+                  
                   <Button
                     type="submit"
                     fullWidth

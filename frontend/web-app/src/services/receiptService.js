@@ -40,6 +40,11 @@ const receiptService = {
     const response = await api.post(`/receipts/${id}/void`, { reason });
     return response.data;
   },
+
+  getReceiptAudit: async (id) => {
+    const response = await api.get(`/receipts/${id}/audit`);
+    return response.data;
+  },
 };
 
 export default receiptService;

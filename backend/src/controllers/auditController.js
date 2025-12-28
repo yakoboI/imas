@@ -72,7 +72,12 @@ class AuditController {
 
       const activity = await AuditService.getUserActivity(userId, tenantId);
 
-      res.json({ activity });
+      // Return in consistent format with getAuditLogs
+      res.json({ 
+        activity,
+        logs: activity, // For backward compatibility
+        data: activity  // For backward compatibility
+      });
     } catch (error) {
       next(error);
     }

@@ -22,6 +22,9 @@ const StockSession = require('./StockSession');
 const SubSession = require('./SubSession');
 const StockAdjustment = require('./StockAdjustment');
 const DailySummary = require('./DailySummary');
+const Passkey = require('./Passkey');
+const Integration = require('./Integration');
+const IntegrationLog = require('./IntegrationLog');
 
 // Define Relationships
 
@@ -41,6 +44,7 @@ User.hasMany(Order, { foreignKey: 'created_by', as: 'orders' });
 User.hasMany(Receipt, { foreignKey: 'created_by', as: 'receipts' });
 User.hasMany(AuditLog, { foreignKey: 'user_id', as: 'auditLogs' });
 User.hasMany(PushSubscription, { foreignKey: 'user_id', as: 'pushSubscriptions' });
+User.hasMany(Passkey, { foreignKey: 'user_id', as: 'passkeys', onDelete: 'CASCADE' });
 
 // Product relationships
 Product.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
@@ -157,6 +161,18 @@ StockAdjustment.belongsTo(User, { foreignKey: 'adjusted_by', as: 'adjustedBy' })
 DailySummary.belongsTo(StockSession, { foreignKey: 'session_id', as: 'session' });
 DailySummary.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
 
+// Passkey relationships
+Passkey.belongsTo(User, { foreignKey: 'user_id', as: 'user', onDelete: 'CASCADE' });
+
+// Integration relationships
+Integration.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
+Integration.hasMany(IntegrationLog, { foreignKey: 'integration_id', as: 'logs' });
+Tenant.hasMany(Integration, { foreignKey: 'tenant_id', as: 'integrations' });
+
+// IntegrationLog relationships
+IntegrationLog.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
+IntegrationLog.belongsTo(Integration, { foreignKey: 'integration_id', as: 'integration' });
+
 module.exports = {
   Tenant,
   SuperAdmin,
@@ -181,6 +197,9 @@ module.exports = {
   StockSession,
   SubSession,
   StockAdjustment,
-  DailySummary
+  DailySummary,
+  Passkey,
+  Integration,
+  IntegrationLog
 };
 

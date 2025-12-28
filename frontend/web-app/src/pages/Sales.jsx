@@ -45,6 +45,10 @@ import productService from '../services/productService';
 import customerService from '../services/customerService';
 import receiptService from '../services/receiptService';
 import tenantSettingsService from '../services/tenantSettingsService';
+import integrationService from '../services/integrationService';
+import pesapalService from '../services/pesapalService';
+import flutterwaveService from '../services/flutterwaveService';
+import dpoService from '../services/dpoService';
 import { toast } from 'react-toastify';
 import { formatCurrency } from '../utils/currency';
 
@@ -66,6 +70,8 @@ function Sales() {
   const [activeTab, setActiveTab] = useState('pos'); // 'pos', 'orders', or 'history'
   const [showCartView, setShowCartView] = useState(false); // For small screens: show cart view or products view
   const [productOrderHistory, setProductOrderHistory] = useState({}); // { productId: [orders] }
+  const [activePaymentGateways, setActivePaymentGateways] = useState([]);
+  const [initiatingPayment, setInitiatingPayment] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -73,7 +79,20 @@ function Sales() {
     loadSettings();
     loadCompletedSales();
     loadUncompletedOrders();
+    loadActivePaymentGateways();
   }, []);
+
+  const loadActivePaymentGateways = async () => {
+    try {
+      const response = await integrationService.getAvailableIntegrations();
+      const paymentIntegrations = (response.integrations || []).filter(
+        integration => integration.category === 'payment' && integration.connected && integration.connectionStatus?.status === 'active'
+      );
+      setActivePaymentGateways(paymentIntegrations);
+    } catch (error) {
+      console.error('Failed to load payment gateways:', error);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -375,27 +394,58 @@ function Sales() {
       const orderResponse = await orderService.createOrder(orderData);
       const order = orderResponse.order || orderResponse.data;
       
-      // Automatically complete the order
-      try {
-        await orderService.completeOrder(order.id);
-      } catch (error) {
-        console.error('Failed to complete order:', error);
-        // Don't show error toast here - order was created successfully
-        // Completion failure is not critical
-      }
+      // Check if payment gateway is selected
+      const isPaymentGateway = paymentMethod && ['pesapal', 'flutterwave', 'dpo'].includes(paymentMethod);
+      
+      if (isPaymentGateway) {
+        // Initiate payment with gateway
+        setInitiatingPayment(true);
+        try {
+          let paymentResponse;
+          if (paymentMethod === 'pesapal') {
+            paymentResponse = await pesapalService.initiatePayment(order.id);
+          } else if (paymentMethod === 'flutterwave') {
+            paymentResponse = await flutterwaveService.initiatePayment(order.id);
+          } else if (paymentMethod === 'dpo') {
+            paymentResponse = await dpoService.initiatePayment(order.id);
+          }
 
-      // Automatically generate receipt
-      let receipt = null;
-      try {
-        const receiptResponse = await receiptService.generateReceipt(order.id, {
-          templateType: 'thermal',
-        });
-        receipt = receiptResponse.receipt || receiptResponse.data;
-        toast.success('Sale completed and receipt generated successfully!');
-      } catch (error) {
-        console.error('Failed to generate receipt:', error);
-        // Order was created successfully, receipt generation is optional
-        toast.success('Sale completed! Receipt generation failed. You can generate it later.');
+          if (paymentResponse?.redirectUrl) {
+            // Open payment gateway in new window
+            window.open(paymentResponse.redirectUrl, '_blank');
+            toast.success('Order created! Redirecting to payment gateway...');
+            // Don't complete order or generate receipt - webhook will handle it
+          } else {
+            toast.error('Payment gateway did not return a redirect URL');
+            // Fallback: complete order manually
+            await orderService.completeOrder(order.id);
+            await receiptService.generateReceipt(order.id, { templateType: 'thermal' });
+          }
+        } catch (error) {
+          console.error('Failed to initiate payment:', error);
+          toast.error(error.response?.data?.error || 'Failed to initiate payment. Order created but not paid.');
+          // Don't complete order if payment fails
+        } finally {
+          setInitiatingPayment(false);
+        }
+      } else {
+        // Regular payment method - complete order immediately
+        try {
+          await orderService.completeOrder(order.id);
+        } catch (error) {
+          console.error('Failed to complete order:', error);
+        }
+
+        // Automatically generate receipt
+        try {
+          await receiptService.generateReceipt(order.id, {
+            templateType: 'thermal',
+          });
+          toast.success('Sale completed and receipt generated successfully!');
+        } catch (error) {
+          console.error('Failed to generate receipt:', error);
+          toast.success('Sale completed! Receipt generation failed. You can generate it later.');
+        }
       }
       
       // Clear cart and reset form
@@ -961,6 +1011,16 @@ function Sales() {
                       <MenuItem value="bank_transfer">Bank Transfer</MenuItem>
                       <MenuItem value="mobile_money">Mobile Money</MenuItem>
                       <MenuItem value="credit">Credit</MenuItem>
+                      {activePaymentGateways.length > 0 && (
+                        <>
+                          <Divider sx={{ my: 0.5 }} />
+                          {activePaymentGateways.map((gateway) => (
+                            <MenuItem key={gateway.type} value={gateway.type}>
+                              {gateway.name}
+                            </MenuItem>
+                          ))}
+                        </>
+                      )}
                     </Select>
                   </FormControl>
                 </Box>
@@ -999,10 +1059,10 @@ function Sales() {
                   size={isSmallScreen ? 'medium' : 'large'}
                   startIcon={<Payment />}
                   onClick={handleCompleteSale}
-                  disabled={processing || cart.length === 0 || !selectedCustomer}
+                  disabled={processing || initiatingPayment || cart.length === 0 || !selectedCustomer}
                   sx={{ py: { xs: 1.25, sm: 1.5 } }}
                 >
-                  {processing ? 'Processing...' : 'Complete Sale'}
+                  {processing || initiatingPayment ? 'Processing...' : 'Complete Sale'}
                 </Button>
               </>
             )}

@@ -681,27 +681,35 @@ class OrderController {
     try {
       const { productId } = req.params;
       const tenantId = req.tenantId;
-      const { limit = 10 } = req.query;
+      const { limit = 100 } = req.query;
 
       if (!productId) {
         return res.status(400).json({ error: 'Product ID is required' });
       }
 
-      // Get orders that contain this product
+      // Get orders that contain this product (all statuses, not just completed)
       const orders = await Order.findAll({
-        where: { tenant_id: tenantId, status: 'completed' },
+        where: { tenant_id: tenantId },
         include: [
           {
             model: OrderItem,
             as: 'items',
             where: { product_id: productId },
-            attributes: ['quantity', 'unit_price'],
+            attributes: ['id', 'product_id', 'quantity', 'unit_price', 'subtotal', 'discount'],
+            include: [
+              {
+                model: Product,
+                as: 'product',
+                attributes: ['id', 'name', 'sku'],
+                required: false
+              }
+            ],
             required: true
           },
           {
             model: Customer,
             as: 'customer',
-            attributes: ['id', 'name'],
+            attributes: ['id', 'name', 'email', 'phone'],
             required: false
           }
         ],
@@ -710,19 +718,32 @@ class OrderController {
         distinct: true
       });
 
-      // Format response with order numbers and dates
-      const orderHistory = orders.map(order => ({
-        order_number: order.order_number,
-        order_date: order.order_date,
-        customer_name: order.customer?.name || 'Walk-in',
-        quantity: order.items[0]?.quantity || 0,
-        unit_price: order.items[0]?.unit_price || 0
-      }));
+      // Format response with full order data including the matching item
+      const formattedOrders = orders.map(order => {
+        const orderData = order.toJSON();
+        // Find the matching item for this product
+        const matchingItem = orderData.items.find(item => item.product_id === productId);
+        
+        return {
+          id: orderData.id,
+          order_number: orderData.order_number,
+          order_date: orderData.order_date,
+          status: orderData.status,
+          total_amount: orderData.total_amount,
+          customer: orderData.customer,
+          customer_name: orderData.customer?.name || 'Walk-in Customer',
+          items: orderData.items, // Include all items for reference
+          // Include the matching item details at the top level for easy access
+          quantity: matchingItem?.quantity || 0,
+          unit_price: matchingItem?.unit_price || 0,
+          subtotal: matchingItem?.subtotal || 0
+        };
+      });
 
       res.json({
         product_id: productId,
-        orders: orderHistory,
-        count: orderHistory.length
+        orders: formattedOrders,
+        count: formattedOrders.length
       });
     } catch (error) {
       console.error('[OrderController] Error in getOrdersByProduct:', error);

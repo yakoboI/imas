@@ -25,9 +25,12 @@ import {
   Email,
   CalendarToday,
   ArrowBack,
+  Fingerprint,
+  History,
 } from '@mui/icons-material';
 import { fetchProfile } from '../../store/slices/userSlice';
 import ProfileCard from '../../components/profile/ProfileCard';
+import ActivityFeed from '../../components/ActivityFeed';
 import { toast } from 'react-toastify';
 
 function ViewProfile() {
@@ -367,6 +370,24 @@ function ViewProfile() {
             </Paper>
           )}
 
+          {/* User Activity Feed */}
+          <Paper sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 3 }, mt: { xs: 2, sm: 3 } }}>
+            <Typography 
+              variant="h6" 
+              gutterBottom 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                fontSize: { xs: '1rem', sm: '1.25rem' }
+              }}
+            >
+              <History sx={{ fontSize: { xs: 18, sm: 24 } }} /> Activity Feed
+            </Typography>
+            <Divider sx={{ my: { xs: 1.5, sm: 2 } }} />
+            <ActivityFeed limit={10} userId={displayProfile?.id} />
+          </Paper>
+
           <Grid container spacing={{ xs: 1.5, sm: 2 }}>
             <Grid item xs={6} sm="auto">
               <Button
@@ -396,6 +417,21 @@ function ViewProfile() {
                 }}
               >
                 Notification Settings
+              </Button>
+            </Grid>
+            <Grid item xs={6} sm="auto">
+              <Button
+                variant="outlined"
+                startIcon={<Fingerprint sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+                onClick={() => navigate('/profile/passkeys')}
+                fullWidth={isSmallScreen}
+                size={isSmallScreen ? 'small' : 'medium'}
+                sx={{ 
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  py: { xs: 1, sm: 1.5 }
+                }}
+              >
+                Passkeys
               </Button>
             </Grid>
           </Grid>

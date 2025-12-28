@@ -63,6 +63,43 @@ const Tenant = sequelize.define('Tenant', {
   settings: {
     type: DataTypes.JSONB,
     defaultValue: {}
+  },
+  // TRA EFDMS Integration Fields
+  tenant_tin: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  vfd_serial_num: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  tra_cert_pfx_base64: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  cert_password: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  current_global_counter: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  last_zreport_date: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  tra_verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  tra_verified_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  tra_api_endpoint: {
+    type: DataTypes.STRING(500),
+    allowNull: true
   }
 }, {
   tableName: 'tenants',

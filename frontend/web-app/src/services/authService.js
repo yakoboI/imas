@@ -24,6 +24,25 @@ const authService = {
     const response = await api.post('/auth/reset-password', { token, newPassword });
     return response.data;
   },
+
+  // Passkey login methods
+  passkeyLogin: async (email) => {
+    const passkeyService = (await import('./passkeyService')).default;
+    
+    // Start authentication
+    const options = await passkeyService.startAuthentication(email);
+    
+    // Complete authentication
+    const result = await passkeyService.completeAuthentication(email, options);
+    
+    // Store token and user info (same as password login)
+    if (result.token) {
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('user', JSON.stringify(result.user));
+    }
+    
+    return result;
+  },
 };
 
 export default authService;

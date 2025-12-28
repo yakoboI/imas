@@ -190,7 +190,8 @@ class DailyDigestService {
     }
 
     // Count low stock items
-    const lowStockCount = await Inventory.count({
+    // Query all inventories and filter in JavaScript to avoid GROUP BY issues
+    const inventories = await Inventory.findAll({
       where: {
         tenant_id: tenantId
       },
@@ -201,8 +202,14 @@ class DailyDigestService {
           required: true
         }
       ],
-      having: literal('quantity <= reorder_level')
+      attributes: ['id', 'quantity', 'reorder_level']
     });
+    
+    const lowStockCount = inventories.filter(inv => {
+      const qty = parseInt(inv.quantity) || 0;
+      const reorderLevel = parseInt(inv.reorder_level) || 0;
+      return qty <= reorderLevel;
+    }).length;
 
     if (lowStockCount > 0) {
       tasks.push(`${lowStockCount} product${lowStockCount > 1 ? 's' : ''} need restocking`);

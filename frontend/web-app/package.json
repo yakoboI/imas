@@ -9,6 +9,7 @@
     "@mui/icons-material": "^5.15.0",
     "@mui/material": "^5.15.0",
     "@reduxjs/toolkit": "^2.0.1",
+    "@simplewebauthn/browser": "^10.0.0",
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",
     "html2canvas": "^1.4.1",

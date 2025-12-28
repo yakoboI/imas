@@ -16,6 +16,7 @@ import Profile from './pages/Profile/ViewProfile';
 import EditProfile from './pages/Profile/EditProfile';
 import ChangePassword from './pages/Profile/ChangePassword';
 import NotificationSettings from './pages/Profile/NotificationSettings';
+import PasskeyManagement from './pages/Profile/PasskeyManagement';
 import Products from './pages/Products';
 import Categories from './pages/Categories';
 import Inventory from './pages/Inventory';
@@ -28,6 +29,7 @@ import Suppliers from './pages/Suppliers';
 import AuditLogs from './pages/AuditLogs';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Integrations from './pages/Integrations';
 import Users from './pages/Users';
 
 function PrivateRoute({ children }) {
@@ -84,6 +86,7 @@ function App() {
         <Route path="profile/edit" element={<EditProfile />} />
         <Route path="profile/password" element={<ChangePassword />} />
         <Route path="profile/notifications" element={<NotificationSettings />} />
+        <Route path="profile/passkeys" element={<PasskeyManagement />} />
         
         {/* Main Features */}
         <Route path="products" element={<Products />} />
@@ -98,6 +101,7 @@ function App() {
         <Route path="audit-logs" element={<AuditLogs />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="integrations" element={<Integrations />} />
         <Route path="users" element={<Users />} />
       </Route>
 

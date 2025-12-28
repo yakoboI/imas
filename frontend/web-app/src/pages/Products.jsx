@@ -31,11 +31,13 @@ import {
   Search,
   Inventory as InventoryIcon,
   Close,
+  ShoppingCart,
 } from '@mui/icons-material';
 import productService from '../services/productService';
 import categoryService from '../services/categoryService';
 import warehouseService from '../services/warehouseService';
 import tenantSettingsService from '../services/tenantSettingsService';
+import orderService from '../services/orderService';
 import { toast } from 'react-toastify';
 import { formatCurrency } from '../utils/currency';
 
@@ -50,6 +52,8 @@ function Products() {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, product: null });
   const [addDialog, setAddDialog] = useState(false);
   const [editDialog, setEditDialog] = useState({ open: false, product: null });
+  const [ordersDialog, setOrdersDialog] = useState({ open: false, product: null, orders: [] });
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const [formData, setFormData] = useState({
     name: '',
@@ -153,6 +157,24 @@ function Products() {
       warehouse_id: defaultWarehouse,
     });
     setAddDialog(true);
+  };
+
+  const handleViewOrders = async (product) => {
+    setOrdersDialog({ open: true, product, orders: [] });
+    setLoadingOrders(true);
+    try {
+      const response = await orderService.getOrdersByProduct(product.id);
+      setOrdersDialog({
+        open: true,
+        product,
+        orders: response.orders || []
+      });
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+      toast.error('Failed to load orders for this product');
+    } finally {
+      setLoadingOrders(false);
+    }
   };
 
   const handleEdit = (product) => {
@@ -345,10 +367,20 @@ function Products() {
                     />
                   </TableCell>
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <IconButton
+                      size="small"
+                      color="info"
+                      onClick={() => handleViewOrders(product)}
+                      title="View Orders"
+                      sx={{ padding: { xs: '4px', sm: '8px' } }}
+                    >
+                      <ShoppingCart fontSize="small" />
+                    </IconButton>
                     <IconButton 
                       size="small" 
                       color="primary" 
                       onClick={() => handleEdit(product)}
+                      title="Edit Product"
                       sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
                       <Edit fontSize="small" />
@@ -357,6 +389,7 @@ function Products() {
                       size="small"
                       color="error"
                       onClick={() => setDeleteDialog({ open: true, product })}
+                      title="Delete Product"
                       sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
                       <Delete fontSize="small" />
@@ -656,6 +689,104 @@ function Products() {
             size={isSmallScreen ? 'small' : 'medium'}
           >
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Orders Dialog */}
+      <Dialog
+        open={ordersDialog.open}
+        onClose={() => setOrdersDialog({ open: false, product: null, orders: [] })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Orders for {ordersDialog.product?.name || 'Product'}</span>
+            {isSmallScreen && (
+              <IconButton
+                edge="end"
+                color="inherit"
+                onClick={() => setOrdersDialog({ open: false, product: null, orders: [] })}
+                aria-label="close"
+                size="small"
+              >
+                <Close />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {loadingOrders ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : ordersDialog.orders.length === 0 ? (
+            <Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+              No orders found for this product
+            </Typography>
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Order Number</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell align="right">Quantity</TableCell>
+                    <TableCell align="right">Unit Price</TableCell>
+                    <TableCell align="right">Total</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {ordersDialog.orders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>{order.order_number || `#${order.id}`}</TableCell>
+                      <TableCell>
+                        {order.customer?.name || order.customer_name || order.customer_email || 'Walk-in'}
+                      </TableCell>
+                      <TableCell align="right">
+                        {order.quantity || order.items?.find(item => item.product_id === ordersDialog.product?.id)?.quantity || 'N/A'}
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatCurrency(
+                          order.unit_price || order.items?.find(item => item.product_id === ordersDialog.product?.id)?.unit_price || 0,
+                          currency
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {formatCurrency(
+                          order.subtotal || order.items?.find(item => item.product_id === ordersDialog.product?.id)?.subtotal || 0,
+                          currency
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={order.status || 'pending'}
+                          size="small"
+                          color={
+                            order.status === 'completed' ? 'success' :
+                            order.status === 'cancelled' ? 'error' : 'warning'
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setOrdersDialog({ open: false, product: null, orders: [] })}
+            size={isSmallScreen ? 'small' : 'medium'}
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>

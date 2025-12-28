@@ -47,26 +47,39 @@ const ACTION_COLORS = {
   PUT: 'warning',
 };
 
-function ActivityFeed({ limit = 10 }) {
+function ActivityFeed({ limit = 10, userId = null }) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadActivities();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(loadActivities, 30000);
-    return () => clearInterval(interval);
-  }, [limit]);
+    // Auto-refresh every 30 seconds (only if not user-specific)
+    if (!userId) {
+      const interval = setInterval(loadActivities, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [limit, userId]);
 
   const loadActivities = async () => {
     try {
       setRefreshing(true);
-      const response = await auditService.getAuditLogs({ limit });
-      const logs = response.logs || response.data || [];
-      setActivities(logs.slice(0, limit));
+      let response;
+      if (userId) {
+        // Use user-specific activity endpoint
+        response = await auditService.getUserActivity(userId);
+        // Backend returns { activity: [...] }
+        const logs = response.activity || response.logs || response.data || [];
+        setActivities(logs.slice(0, limit));
+      } else {
+        response = await auditService.getAuditLogs({ limit });
+        // Backend returns { logs: [...] } or { data: [...] }
+        const logs = response.logs || response.data || [];
+        setActivities(logs.slice(0, limit));
+      }
     } catch (error) {
       console.error('Failed to load activities:', error);
+      setActivities([]);
     } finally {
       setLoading(false);
       setRefreshing(false);

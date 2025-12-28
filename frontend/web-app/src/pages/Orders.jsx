@@ -35,11 +35,18 @@ import {
   ShoppingCart as OrderIcon,
   Delete as DeleteIcon,
   Close,
+  Cancel,
+  CheckCircle,
+  Payment,
 } from '@mui/icons-material';
 import orderService from '../services/orderService';
 import productService from '../services/productService';
 import customerService from '../services/customerService';
 import tenantSettingsService from '../services/tenantSettingsService';
+import integrationService from '../services/integrationService';
+import pesapalService from '../services/pesapalService';
+import flutterwaveService from '../services/flutterwaveService';
+import dpoService from '../services/dpoService';
 import { toast } from 'react-toastify';
 import { formatCurrency } from '../utils/currency';
 
@@ -56,6 +63,8 @@ function Orders() {
   const [viewOrderDetails, setViewOrderDetails] = useState(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
   const [currency, setCurrency] = useState('USD');
+  const [activePaymentGateways, setActivePaymentGateways] = useState([]);
+  const [initiatingPayment, setInitiatingPayment] = useState({ gateway: null, loading: false });
   const [formData, setFormData] = useState({
     customer_id: '',
     payment_method: '',
@@ -68,7 +77,20 @@ function Orders() {
     loadProducts();
     loadCustomers();
     loadSettings();
+    loadActivePaymentGateways();
   }, []);
+
+  const loadActivePaymentGateways = async () => {
+    try {
+      const response = await integrationService.getAvailableIntegrations();
+      const paymentIntegrations = (response.integrations || []).filter(
+        integration => integration.category === 'payment' && integration.connected && integration.connectionStatus?.status === 'active'
+      );
+      setActivePaymentGateways(paymentIntegrations);
+    } catch (error) {
+      console.error('Failed to load payment gateways:', error);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -211,6 +233,83 @@ function Orders() {
     }
   };
 
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await orderService.cancelOrder(orderId);
+      toast.success('Order cancelled successfully');
+      loadOrders();
+      // Close dialog if viewing this order
+      if (viewDialog.order?.id === orderId) {
+        setViewDialog({ open: false, order: null });
+      }
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      toast.error(error.response?.data?.error || 'Failed to cancel order');
+    }
+  };
+
+  const handleCompleteOrder = async (orderId) => {
+    if (!window.confirm('Mark this order as completed? This will finalize the order.')) {
+      return;
+    }
+
+    try {
+      await orderService.completeOrder(orderId);
+      toast.success('Order marked as completed');
+      loadOrders();
+      // Reload order details if viewing this order
+      if (viewDialog.order?.id === orderId) {
+        const response = await orderService.getOrderById(orderId);
+        setViewOrderDetails(response.order);
+      }
+    } catch (error) {
+      console.error('Failed to complete order:', error);
+      toast.error(error.response?.data?.error || 'Failed to complete order');
+    }
+  };
+
+  const handleInitiatePayment = async (orderId, gatewayType) => {
+    if (!orderId || !gatewayType) return;
+
+    setInitiatingPayment({ gateway: gatewayType, loading: true });
+    try {
+      let response;
+      if (gatewayType === 'pesapal') {
+        response = await pesapalService.initiatePayment(orderId);
+      } else if (gatewayType === 'flutterwave') {
+        response = await flutterwaveService.initiatePayment(orderId);
+      } else if (gatewayType === 'dpo') {
+        response = await dpoService.initiatePayment(orderId);
+      } else {
+        throw new Error('Unknown payment gateway');
+      }
+
+      if (response.redirectUrl) {
+        // Open payment gateway in new window/tab
+        window.open(response.redirectUrl, '_blank');
+        toast.success('Redirecting to payment gateway...');
+        // Reload order to get updated payment status
+        setTimeout(() => {
+          loadOrders();
+          if (viewDialog.order?.id === orderId) {
+            handleViewOrder(viewDialog.order);
+          }
+        }, 2000);
+      } else {
+        toast.error('Payment gateway did not return a redirect URL');
+      }
+    } catch (error) {
+      console.error('Failed to initiate payment:', error);
+      toast.error(error.response?.data?.error || 'Failed to initiate payment');
+    } finally {
+      setInitiatingPayment({ gateway: null, loading: false });
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'completed':
@@ -347,10 +446,33 @@ function Orders() {
                     />
                   </TableCell>
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    {order.status?.toLowerCase() !== 'completed' && order.status?.toLowerCase() !== 'cancelled' && (
+                      <IconButton
+                        size="small"
+                        color="success"
+                        onClick={() => handleCompleteOrder(order.id)}
+                        title="Complete Order"
+                        sx={{ padding: { xs: '4px', sm: '8px' } }}
+                      >
+                        <CheckCircle fontSize="small" />
+                      </IconButton>
+                    )}
+                    {order.status?.toLowerCase() !== 'cancelled' && (
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleCancelOrder(order.id)}
+                        title="Cancel Order"
+                        sx={{ padding: { xs: '4px', sm: '8px' } }}
+                      >
+                        <Cancel fontSize="small" />
+                      </IconButton>
+                    )}
                     <IconButton 
                       size="small" 
                       color="primary" 
                       onClick={() => handleViewOrder(order)}
+                      title="View Order"
                       sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
                       <Visibility fontSize="small" />
@@ -682,6 +804,28 @@ function Orders() {
           )}
         </DialogContent>
         <DialogActions>
+          {viewOrderDetails && viewOrderDetails.status?.toLowerCase() !== 'completed' && viewOrderDetails.status?.toLowerCase() !== 'cancelled' && (
+            <>
+              <Button
+                onClick={() => handleCompleteOrder(viewOrderDetails.id)}
+                startIcon={<CheckCircle />}
+                color="success"
+                variant="outlined"
+                size={isSmallScreen ? 'small' : 'medium'}
+              >
+                Complete Order
+              </Button>
+              <Button
+                onClick={() => handleCancelOrder(viewOrderDetails.id)}
+                startIcon={<Cancel />}
+                color="error"
+                variant="outlined"
+                size={isSmallScreen ? 'small' : 'medium'}
+              >
+                Cancel Order
+              </Button>
+            </>
+          )}
           <Button 
             onClick={() => setViewDialog({ open: false, order: null })}
             size={isSmallScreen ? 'small' : 'medium'}

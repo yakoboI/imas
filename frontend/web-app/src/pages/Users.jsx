@@ -48,6 +48,8 @@ function Users() {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, user: null });
   const [addDialog, setAddDialog] = useState(false);
   const [userLimit, setUserLimit] = useState({ current: 0, max: 5, remaining: 5, canAddMore: true });
+  const [tenantInfo, setTenantInfo] = useState(null);
+  const [loadingTenantInfo, setLoadingTenantInfo] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -59,8 +61,25 @@ function Users() {
   useEffect(() => {
     if (user?.role === 'admin') {
       loadUsers();
+      loadTenantInfo();
     }
   }, [user]);
+
+  const loadTenantInfo = async () => {
+    setLoadingTenantInfo(true);
+    try {
+      const response = await userManagementService.getTenantInfo();
+      setTenantInfo(response);
+      // Also update userLimit from tenant info if available
+      if (response.userLimit) {
+        setUserLimit(response.userLimit);
+      }
+    } catch (error) {
+      console.error('Failed to load tenant info:', error);
+    } finally {
+      setLoadingTenantInfo(false);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -185,6 +204,49 @@ function Users() {
           You have reached the maximum number of users ({userLimit.max}) allowed for your plan. 
           Please contact your administrator to upgrade your plan or increase the user limit.
         </Alert>
+      )}
+
+      {/* Tenant Information Section */}
+      {tenantInfo && (
+        <Paper sx={{ p: 2, mb: 3, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Tenant Name
+              </Typography>
+              <Typography variant="body1" fontWeight="bold">
+                {tenantInfo.tenant?.name || tenantInfo.tenantName || tenantInfo.name || 'N/A'}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Total Users
+              </Typography>
+              <Typography variant="body1" fontWeight="bold">
+                {tenantInfo.userCount || tenantInfo.userLimit?.current || tenantInfo.totalUsers || 0} / {tenantInfo.maxUsers === 999999 || tenantInfo.tenant?.maxUsers === 999999 ? 'Unlimited' : tenantInfo.maxUsers || tenantInfo.tenant?.maxUsers || 'N/A'}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Plan Type
+              </Typography>
+              <Typography variant="body1" fontWeight="bold">
+                {tenantInfo.tenant?.planType || tenantInfo.planType || tenantInfo.plan || 'Standard'}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Status
+              </Typography>
+              <Chip 
+                label={tenantInfo.tenant?.status || tenantInfo.status || 'active'} 
+                size="small" 
+                color={(tenantInfo.tenant?.status || tenantInfo.status || 'active') === 'active' ? 'success' : 'default'}
+                sx={{ bgcolor: 'white', color: 'primary.main' }}
+              />
+            </Grid>
+          </Grid>
+        </Paper>
       )}
 
       <TextField
