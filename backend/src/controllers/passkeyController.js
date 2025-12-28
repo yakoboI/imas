@@ -68,7 +68,17 @@ class PasskeyController {
    */
   static async startAuthentication(req, res, next) {
     try {
-      const { email } = req.body;
+      let { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+
+      // Normalize email: ensure it's a string and trim/lowercase
+      if (typeof email !== 'string') {
+        email = String(email);
+      }
+      email = email.trim().toLowerCase();
 
       if (!email) {
         return res.status(400).json({ error: 'Email is required' });
@@ -92,10 +102,20 @@ class PasskeyController {
    */
   static async completeAuthentication(req, res, next) {
     try {
-      const { email, credential } = req.body;
+      let { email, credential } = req.body;
 
       if (!email || !credential) {
         return res.status(400).json({ error: 'Email and credential are required' });
+      }
+
+      // Normalize email: ensure it's a string and trim/lowercase
+      if (typeof email !== 'string') {
+        email = String(email);
+      }
+      email = email.trim().toLowerCase();
+
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
       }
 
       const result = await PasskeyService.completeAuthentication(email, credential);
@@ -170,15 +190,16 @@ class PasskeyController {
    */
   static async checkPasskeys(req, res, next) {
     try {
-      const { email } = req.query;
+      let { email } = req.query;
 
       if (!email) {
         return res.status(400).json({ error: 'Email is required' });
       }
 
-      const User = require('../models/User');
-      const { Op } = require('sequelize');
-      // Case-insensitive email lookup
+      // Normalize email: ensure it's a string and trim/lowercase
+      if (typeof email !== 'string') {
+        email = String(email);
+      }
       const normalizedEmail = email.trim().toLowerCase();
       const user = await User.findOne({ 
         where: { 

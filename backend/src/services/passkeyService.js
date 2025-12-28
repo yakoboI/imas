@@ -216,8 +216,23 @@ class PasskeyService {
    * Start passkey authentication - generate challenge for login
    */
   static async startAuthentication(email) {
+    // Normalize email: ensure it's a string and trim/lowercase
+    if (typeof email !== 'string') {
+      email = String(email);
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      throw new Error('Email is required');
+    }
+
+    const { Op } = require('sequelize');
     const user = await User.findOne({
-      where: { email },
+      where: { 
+        email: {
+          [Op.iLike]: normalizedEmail // Case-insensitive lookup
+        }
+      },
       include: [{ model: Tenant, as: 'tenant' }]
     });
 
@@ -278,8 +293,23 @@ class PasskeyService {
    * Complete passkey authentication - verify and return JWT token
    */
   static async completeAuthentication(email, authenticationResponse) {
+    // Normalize email: ensure it's a string and trim/lowercase
+    if (typeof email !== 'string') {
+      email = String(email);
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      throw new Error('Email is required');
+    }
+
+    const { Op } = require('sequelize');
     const user = await User.findOne({
-      where: { email },
+      where: { 
+        email: {
+          [Op.iLike]: normalizedEmail // Case-insensitive lookup
+        }
+      },
       include: [{ model: Tenant, as: 'tenant' }]
     });
 
