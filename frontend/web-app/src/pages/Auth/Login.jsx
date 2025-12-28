@@ -51,7 +51,7 @@ function Login() {
   const [touched, setTouched] = useState({});
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [passkeySupported, setPasskeySupported] = useState(false);
-  const [hasPasskeys, setHasPasskeys] = useState(false);
+  const [hasPasskeys, setHasPasskeys] = useState(null); // null = not checked yet, true/false = checked
   const [checkingPasskeys, setCheckingPasskeys] = useState(false);
 
   useEffect(() => {
@@ -76,7 +76,7 @@ function Login() {
   useEffect(() => {
     const checkUserPasskeys = async () => {
       if (!formData.email || !validateEmail(formData.email) || !passkeySupported) {
-        setHasPasskeys(false);
+        setHasPasskeys(null); // Reset to not checked
         return;
       }
 
@@ -85,7 +85,8 @@ function Login() {
         const hasKeys = await passkeyService.checkPasskeys(formData.email);
         setHasPasskeys(hasKeys);
       } catch (error) {
-        setHasPasskeys(false);
+        // On error, don't assume no passkeys - just don't show the message
+        setHasPasskeys(null);
       } finally {
         setCheckingPasskeys(false);
       }
@@ -464,7 +465,7 @@ function Login() {
                     </Box>
                   )}
                   
-                  {passkeySupported && hasPasskeys && !validationErrors.email && formData.email && !checkingPasskeys && (
+                  {passkeySupported && hasPasskeys === true && !validationErrors.email && formData.email && !checkingPasskeys && (
                     <>
                       <Box sx={{ 
                         display: 'flex', 
@@ -517,10 +518,10 @@ function Login() {
                     </>
                   )}
                   
-                  {passkeySupported && !hasPasskeys && formData.email && !validationErrors.email && !checkingPasskeys && (
+                  {passkeySupported && hasPasskeys === false && formData.email && !validationErrors.email && !checkingPasskeys && (
                     <Box sx={{ textAlign: 'center', my: 1 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                        💡 No passkeys registered. Login with password, then go to Profile → Passkeys to set one up.
+                        💡 No passkeys registered. After logging in, go to Profile → Security & Settings → Manage Passkeys to set one up.
                       </Typography>
                     </Box>
                   )}
