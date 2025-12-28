@@ -521,7 +521,12 @@ class SuperAdminController {
       const { count, rows } = await User.findAndCountAll({
         where,
         attributes: { exclude: ['password'] },
-        include: [{ model: Tenant, as: 'tenant', attributes: ['id', 'name', 'subdomain'] }],
+        include: [{ 
+          model: Tenant, 
+          as: 'tenant', 
+          attributes: ['id', 'name', 'subdomain'],
+          required: false // Left join to handle cases where tenant might not exist
+        }],
         limit: parseInt(limit),
         offset: parseInt(offset),
         order: [['created_at', 'DESC']]
@@ -537,6 +542,7 @@ class SuperAdminController {
         }
       });
     } catch (error) {
+      console.error('Error in getAllUsers:', error);
       next(error);
     }
   }
