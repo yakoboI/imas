@@ -126,6 +126,7 @@ function Login() {
     };
   }, [formData.email, passkeySupported]);
 
+
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -364,8 +365,28 @@ function Login() {
                     autoComplete="email"
                     autoFocus
                     value={formData.email}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
+                    onChange={(e) => {
+                      handleChange(e);
+                      // Also trigger passkey check on change
+                    }}
+                    onBlur={(e) => {
+                      handleBlur(e);
+                      // Check for passkeys when user leaves email field
+                      if (e.target.value && validateEmail(e.target.value) && passkeySupported) {
+                        const checkPasskeys = async () => {
+                          try {
+                            setCheckingPasskeys(true);
+                            const hasKeys = await passkeyService.checkPasskeys(e.target.value.trim().toLowerCase());
+                            setHasPasskeys(hasKeys);
+                          } catch (error) {
+                            setHasPasskeys(null);
+                          } finally {
+                            setCheckingPasskeys(false);
+                          }
+                        };
+                        checkPasskeys();
+                      }
+                    }}
                     error={touched.email && !!validationErrors.email}
                     helperText={touched.email && validationErrors.email}
                     size={isMobile ? 'small' : 'medium'}
