@@ -11,7 +11,15 @@ const migrations = [
   '004_add_superadmin_avatar_url.sql',
   '005_add_notification_tables.sql',
   '006_add_collections_tables.sql',
-  '007_add_password_reset_fields.sql'
+  '007_add_password_reset_fields.sql',
+  '008_create_user_passkeys_table.sql',
+  '009_add_tra_integration_fields.sql',
+  '010_add_tra_fields_to_receipts.sql',
+  '011_create_integrations_table.sql',
+  '012_create_integration_logs_table.sql',
+  '013_add_payment_reference_to_orders.sql',
+  '014_add_accounting_sync_to_receipts.sql',
+  '015_add_payment_gateway_methods.sql'
 ];
 
 async function runAllMigrations() {

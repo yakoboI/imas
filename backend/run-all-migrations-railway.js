@@ -14,7 +14,16 @@ const migrations = [
   { file: '003_add_max_warehouses.sql', name: 'Add Max Warehouses' },
   { file: '004_add_superadmin_avatar_url.sql', name: 'Add SuperAdmin Avatar URL' },
   { file: '005_add_notification_tables.sql', name: 'Add Notification Tables' },
-  { file: '006_add_collections_tables.sql', name: 'Add Collections Tables' }
+  { file: '006_add_collections_tables.sql', name: 'Add Collections Tables' },
+  { file: '007_add_password_reset_fields.sql', name: 'Add Password Reset Fields' },
+  { file: '008_create_user_passkeys_table.sql', name: 'Create User Passkeys Table' },
+  { file: '009_add_tra_integration_fields.sql', name: 'Add TRA Integration Fields' },
+  { file: '010_add_tra_fields_to_receipts.sql', name: 'Add TRA Fields to Receipts' },
+  { file: '011_create_integrations_table.sql', name: 'Create Integrations Table' },
+  { file: '012_create_integration_logs_table.sql', name: 'Create Integration Logs Table' },
+  { file: '013_add_payment_reference_to_orders.sql', name: 'Add Payment Reference to Orders' },
+  { file: '014_add_accounting_sync_to_receipts.sql', name: 'Add Accounting Sync to Receipts' },
+  { file: '015_add_payment_gateway_methods.sql', name: 'Add Payment Gateway Methods' }
 ];
 
 async function runAllMigrations() {
