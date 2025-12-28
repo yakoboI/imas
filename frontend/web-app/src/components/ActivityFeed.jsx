@@ -183,9 +183,11 @@ function ActivityFeed({ limit = 10, userId = null }) {
                 </Avatar>
               </ListItemAvatar>
               <ListItemText
+                primaryTypographyProps={{ component: 'div' }}
+                secondaryTypographyProps={{ component: 'div' }}
                 primary={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                    <Typography variant="body2" fontWeight={500}>
+                    <Typography variant="body2" component="span" fontWeight={500}>
                       {formatAction(activity.action, activity.entity_type)}
                     </Typography>
                     <Chip
@@ -198,7 +200,7 @@ function ActivityFeed({ limit = 10, userId = null }) {
                 }
                 secondary={
                   <Box>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" component="span" color="text.secondary">
                       {getUserName(activity.user)} •{' '}
                       {activity.timestamp
                         ? formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })
@@ -207,6 +209,7 @@ function ActivityFeed({ limit = 10, userId = null }) {
                     {activity.description && (
                       <Typography
                         variant="caption"
+                        component="span"
                         color="text.secondary"
                         sx={{ display: 'block', mt: 0.5 }}
                       >

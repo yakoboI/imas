@@ -25,6 +25,7 @@ import {
   CardContent,
   useMediaQuery,
   useTheme,
+  Tooltip,
 } from '@mui/material';
 import {
   Add,
@@ -233,10 +234,30 @@ function Sales() {
   };
 
   const handleRemoveFromCart = (productId) => {
+    const itemToRemove = cart.find(item => item.product_id === productId);
     const newCart = cart.filter(item => item.product_id !== productId);
     setCart(newCart);
+    
+    // Show toast notification
+    if (itemToRemove) {
+      toast.success(`${itemToRemove.product_name} removed from cart`);
+    }
+    
     // On small screens, if cart becomes empty, show products view
     if (isSmallScreen && newCart.length === 0) {
+      setShowCartView(false);
+    }
+  };
+
+  const handleClearCart = () => {
+    if (cart.length === 0) return;
+    
+    const itemCount = cart.length;
+    setCart([]);
+    toast.success(`All ${itemCount} item${itemCount !== 1 ? 's' : ''} removed from cart`);
+    
+    // On small screens, show products view when cart is cleared
+    if (isSmallScreen) {
       setShowCartView(false);
     }
   };
@@ -653,93 +674,109 @@ function Sales() {
   }
 
   return (
-    <Box>
+    <Box sx={{ px: { xs: '1px', sm: 0 }, mx: { xs: 0, sm: 0 } }}>
       <Box sx={{ 
         display: 'flex', 
         flexDirection: { xs: 'column', sm: 'row' },
         justifyContent: 'space-between', 
         alignItems: { xs: 'flex-start', sm: 'center' }, 
-        mb: 3,
-        gap: { xs: 2, sm: 0 }
+        mb: { xs: 2, sm: 3 },
+        gap: { xs: 2, sm: 0 },
+        px: { xs: '1px', sm: 0 }
       }}>
-        <Box>
+        <Box sx={{ width: { xs: '100%', sm: 'auto' }, textAlign: { xs: 'center', sm: 'left' } }}>
           <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             Sales
           </Typography>
         </Box>
         <Box sx={{ 
-          display: 'flex', 
+          display: { xs: 'flex', sm: 'flex' }, 
           flexDirection: { xs: 'column', sm: 'row' },
           gap: 2, 
           alignItems: { xs: 'stretch', sm: 'center' },
           width: { xs: '100%', sm: 'auto' }
         }}>
-          {activeTab === 'pos' && (
-            <Chip
-              icon={<ShoppingCart />}
-              label={`${calculateTotalItems()} item${calculateTotalItems() !== 1 ? 's' : ''} in cart`}
-              color="primary"
-              variant="outlined"
-              sx={{ 
-                alignSelf: { xs: 'flex-start', sm: 'center' },
-                height: { xs: '32px', sm: '36.5px' },
-                '& .MuiChip-label': {
-                  px: { xs: 1, sm: 1.5 }
+          {/* First Row for Small Screens: Cart Chip + Point of Sale */}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'row', sm: 'row' },
+            gap: 2,
+            width: { xs: '100%', sm: 'auto' }
+          }}>
+            {activeTab === 'pos' && (
+              <Chip
+                icon={<ShoppingCart />}
+                label={`${calculateTotalItems()} item${calculateTotalItems() !== 1 ? 's' : ''} in cart`}
+                color="primary"
+                variant="outlined"
+                sx={{ 
+                  alignSelf: 'center',
+                  height: { xs: '32px', sm: '36.5px' },
+                  flex: { xs: 1, sm: 'none' },
+                  '& .MuiChip-label': {
+                    px: { xs: 1, sm: 1.5 }
+                  }
+                }}
+              />
+            )}
+            <Button
+              variant={activeTab === 'pos' ? 'contained' : 'outlined'}
+              onClick={() => {
+                setActiveTab('pos');
+                // Reset cart view when switching to POS tab
+                if (isSmallScreen) {
+                  setShowCartView(cart.length > 0);
                 }
               }}
-            />
-          )}
-          <Button
-            variant={activeTab === 'pos' ? 'contained' : 'outlined'}
-            onClick={() => {
-              setActiveTab('pos');
-              // Reset cart view when switching to POS tab
-              if (isSmallScreen) {
-                setShowCartView(cart.length > 0);
-              }
-            }}
-            startIcon={<PointOfSale />}
-            size={isSmallScreen ? 'small' : 'medium'}
-            fullWidth={isSmallScreen}
-            sx={{ height: { xs: '32px', sm: '36.5px' } }}
-          >
-            Point of Sale
-          </Button>
-          <Button
-            variant={activeTab === 'orders' ? 'contained' : 'outlined'}
-            onClick={() => {
-              setActiveTab('orders');
-              loadUncompletedOrders();
-            }}
-            startIcon={<OrderIcon />}
-            size={isSmallScreen ? 'small' : 'medium'}
-            fullWidth={isSmallScreen}
-            sx={{ height: { xs: '32px', sm: '36.5px' } }}
-          >
-            Orders ({uncompletedOrders.length})
-          </Button>
-          <Button
-            variant={activeTab === 'history' ? 'contained' : 'outlined'}
-            onClick={() => {
-              setActiveTab('history');
-              loadCompletedSales();
-            }}
-            startIcon={<Receipt />}
-            size={isSmallScreen ? 'small' : 'medium'}
-            fullWidth={isSmallScreen}
-            sx={{ height: { xs: '32px', sm: '36.5px' } }}
-          >
-            Sales History
-          </Button>
+              startIcon={<PointOfSale />}
+              size={isSmallScreen ? 'small' : 'medium'}
+              sx={{ height: { xs: '32px', sm: '36.5px' }, flex: { xs: activeTab === 'pos' ? 1 : 'none', sm: 'none' }, minWidth: { xs: 0, sm: 'auto' } }}
+            >
+              Point of Sale
+            </Button>
+          </Box>
+          
+          {/* Second Row for Small Screens: Orders + Sales History */}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'row', sm: 'row' },
+            gap: 2,
+            width: { xs: '100%', sm: 'auto' }
+          }}>
+            <Button
+              variant={activeTab === 'orders' ? 'contained' : 'outlined'}
+              onClick={() => {
+                setActiveTab('orders');
+                loadUncompletedOrders();
+              }}
+              startIcon={<OrderIcon />}
+              size={isSmallScreen ? 'small' : 'medium'}
+              sx={{ height: { xs: '32px', sm: '36.5px' }, flex: { xs: 1, sm: 'none' }, minWidth: { xs: 0, sm: 'auto' } }}
+            >
+              Orders ({uncompletedOrders.length})
+            </Button>
+            <Button
+              variant={activeTab === 'history' ? 'contained' : 'outlined'}
+              onClick={() => {
+                setActiveTab('history');
+                loadCompletedSales();
+              }}
+              startIcon={<Receipt />}
+              size={isSmallScreen ? 'small' : 'medium'}
+              sx={{ height: { xs: '32px', sm: '36.5px' }, flex: { xs: 1, sm: 'none' }, minWidth: { xs: 0, sm: 'auto' } }}
+            >
+              Sales History
+            </Button>
+          </Box>
         </Box>
       </Box>
 
       {activeTab === 'pos' ? (
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 0.5, sm: 3 }}>
           {/* Products Section - Hidden on small screens when cart has items */}
           {(!isSmallScreen || !showCartView || cart.length === 0) && (
             <Grid item xs={12} md={8}>
-              <Paper sx={{ p: 2, mb: 3 }}>
+              <Paper sx={{ p: { xs: 1, sm: 2 }, mb: { xs: 0.5, sm: 3 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   {isSmallScreen && showCartView && cart.length > 0 && (
                     <IconButton
@@ -766,7 +803,7 @@ function Sales() {
                 </Box>
               </Paper>
 
-              <Paper sx={{ p: 2, maxHeight: '60vh', overflow: 'auto' }}>
+              <Paper sx={{ p: { xs: 1, sm: 2 }, maxHeight: '60vh', overflow: 'auto' }}>
                 <Typography variant="h6" gutterBottom>
                   Products
                 </Typography>
@@ -778,7 +815,7 @@ function Sales() {
                     </Typography>
                   </Box>
                 ) : (
-                  <Grid container spacing={2}>
+                  <Grid container spacing={{ xs: 0.5, sm: 2 }}>
                     {filteredProducts.map((product) => (
                       <Grid item xs={12} sm={6} md={4} key={product.id}>
                         <Card
@@ -867,21 +904,35 @@ function Sales() {
 
         {/* Cart Section */}
         <Grid item xs={12} md={isSmallScreen && showCartView && cart.length > 0 ? 12 : 4}>
-          <Paper sx={{ p: 3, position: { md: 'sticky' }, top: { md: 80 } }}>
+          <Paper sx={{ p: { xs: 1, sm: 3 }, position: { md: 'sticky' }, top: { md: 80 } }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">
-                Cart
+                Cart {cart.length > 0 && `(${cart.length})`}
               </Typography>
-              {isSmallScreen && showCartView && cart.length > 0 && (
-                <IconButton
-                  onClick={() => setShowCartView(false)}
-                  color="inherit"
-                  aria-label="back to products"
-                  size="small"
-                >
-                  <Close />
-                </IconButton>
-              )}
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                {cart.length > 0 && (
+                  <Tooltip title="Clear all items">
+                    <IconButton
+                      onClick={handleClearCart}
+                      color="error"
+                      size="small"
+                      aria-label="clear cart"
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {isSmallScreen && showCartView && cart.length > 0 && (
+                  <IconButton
+                    onClick={() => setShowCartView(false)}
+                    color="inherit"
+                    aria-label="back to products"
+                    size="small"
+                  >
+                    <Close />
+                  </IconButton>
+                )}
+              </Box>
             </Box>
             <Divider sx={{ my: 2 }} />
 
@@ -913,7 +964,7 @@ function Sales() {
                         <TableCell align="right">Qty</TableCell>
                         <TableCell align="right">Price</TableCell>
                         <TableCell align="right">Total</TableCell>
-                        <TableCell align="right"></TableCell>
+                        <TableCell align="right">Action</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -957,13 +1008,16 @@ function Sales() {
                             {formatCurrency(item.subtotal, currency)}
                           </TableCell>
                           <TableCell align="right">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleRemoveFromCart(item.product_id)}
-                            >
-                              <Delete />
-                            </IconButton>
+                            <Tooltip title="Remove from cart">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleRemoveFromCart(item.product_id)}
+                                aria-label={`Remove ${item.product_name} from cart`}
+                              >
+                                <Delete />
+                              </IconButton>
+                            </Tooltip>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1071,7 +1125,7 @@ function Sales() {
       </Grid>
       ) : activeTab === 'orders' ? (
         /* Uncompleted Orders Section */
-        <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="h6" gutterBottom>
             Uncompleted Orders
           </Typography>
@@ -1186,7 +1240,7 @@ function Sales() {
         </Paper>
       ) : (
         /* Sales History Section */
-        <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: { xs: 2, sm: 3 } }}>
           <Typography variant="h6" gutterBottom>
             Completed Sales History
           </Typography>

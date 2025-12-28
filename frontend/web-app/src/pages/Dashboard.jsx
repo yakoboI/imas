@@ -16,6 +16,7 @@ import { toast } from 'react-toastify';
 import { formatCurrency } from '../utils/currency';
 import ActivityFeed from '../components/ActivityFeed';
 import CostSavingsCalculator from '../components/CostSavingsCalculator';
+import ExpandableCostSavingsCalculator from '../components/ExpandableCostSavingsCalculator';
 import RevenueChart from '../components/charts/RevenueChart';
 import OrdersChart from '../components/charts/OrdersChart';
 import StatusDistributionChart from '../components/charts/StatusDistributionChart';
@@ -89,6 +90,9 @@ function Dashboard() {
     try {
       const response = await tenantSettingsService.getSettings();
       if (response.settings && response.settings.currency) {
+        // Set currency from admin settings - this will be used for all currency formatting
+        // The formatCurrency function uses Intl.NumberFormat which automatically formats
+        // with the correct currency symbol based on the currency code
         setCurrency(response.settings.currency);
       }
     } catch (error) {
@@ -157,6 +161,7 @@ function Dashboard() {
     },
     { 
       title: 'Total Revenue', 
+      // Currency symbol is automatically determined by formatCurrency based on admin's currency choice
       value: formatCurrency(parseFloat(stats.totalRevenue) || 0, currency), 
       icon: <TrendingUp />, 
       color: '#d32f2f',
@@ -256,123 +261,523 @@ function Dashboard() {
           </IconButton>
         </Tooltip>
       </Box>
-      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mt: 2 }}>
-        {statCards.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Paper
-              elevation={2}
-              onClick={stat.clickable ? stat.onClick : undefined}
+      <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mt: 2 }}>
+        {/* Row 1: Total products/Quantity, Total Orders, Total Receipts, Total Revenue (4 cards) */}
+        <Grid item xs={6} sm={3} md={3}>
+          <Paper
+            elevation={2}
+            sx={{
+              p: { xs: 1.5, sm: 2.5 },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              minHeight: { xs: 115, sm: 130, md: 140 },
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              position: 'relative',
+              overflow: 'visible',
+            }}
+          >
+            <Box
               sx={{
-                p: { xs: 2, sm: 2.5 },
+                width: { xs: 36, sm: 48, md: 52 },
+                height: { xs: 36, sm: 48, md: 52 },
+                minWidth: { xs: 36, sm: 48, md: 52 },
+                borderRadius: 1.5,
+                backgroundColor: `${statCards[0].color}20`,
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                height: '100%',
-                minHeight: { xs: 100, sm: 120 },
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                position: 'relative',
-                overflow: 'visible',
-                cursor: stat.clickable ? 'pointer' : 'default',
-                '&:hover': {
-                  transform: { xs: 'none', sm: 'translateY(-4px)' },
-                  boxShadow: { xs: 2, sm: 4 },
-                },
+                color: statCards[0].color,
+                flexShrink: 0,
+                mb: { xs: 1, sm: 1.5 },
               }}
             >
-              {/* Red LED Alert Indicator */}
-              {stat.hasAlert && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 4,
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    backgroundColor: '#ff0000',
-                    zIndex: 1000,
-                    boxShadow: '0 0 15px rgba(255, 0, 0, 1), 0 0 30px rgba(255, 0, 0, 0.8), 0 0 45px rgba(255, 0, 0, 0.6)',
-                    animation: 'pulseAlert 1s ease-in-out infinite',
-                  }}
-                />
-              )}
-              <Box
-                sx={{
-                  width: { xs: 40, sm: 48 },
-                  height: { xs: 40, sm: 48 },
-                  minWidth: { xs: 40, sm: 48 },
-                  borderRadius: 1.5,
-                  backgroundColor: `${stat.color}20`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: stat.color,
-                  flexShrink: 0,
-                  mb: 1.5,
+              {React.cloneElement(statCards[0].icon, { sx: { fontSize: { xs: 20, sm: 26, md: 28 } } })}
+            </Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0, textAlign: 'center' }}>
+              <Typography 
+                fontWeight="bold"
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem', md: '0.95rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.5, sm: 0.5 },
+                  color: statCards[0].color,
                 }}
               >
-                {React.cloneElement(stat.icon, { sx: { fontSize: { xs: 20, sm: 24 } } })}
-              </Box>
-              <Box sx={{ flexGrow: 1, minWidth: 0, textAlign: 'center' }}>
-                <Typography 
-                  fontWeight="bold"
-                  sx={{ 
-                    fontSize: { xs: '0.7rem', sm: '0.8rem' },
-                    lineHeight: 1.2,
-                    mb: 0.5,
-                    color: stat.color,
-                  }}
-                >
-                  {stat.value}
-                </Typography>
-                {stat.subtitle && (
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{
-                      fontSize: { xs: '0.7rem', sm: '0.8rem' },
-                      lineHeight: 1.2,
-                      mb: 0.5,
-                      fontWeight: 500,
-                    }}
-                    textAlign="center"
-                  >
-                    {stat.subtitle}
-                  </Typography>
-                )}
-                {stat.description && stat.hasAlert && (
-                  <Typography 
-                    variant="caption" 
-                    color="error"
-                    sx={{
-                      fontSize: { xs: '0.65rem', sm: '0.7rem' },
-                      lineHeight: 1.2,
-                      mt: 0.5,
-                      fontStyle: 'italic',
-                    }}
-                    textAlign="center"
-                  >
-                    ⚠️ Action required
-                  </Typography>
-                )}
-                {stat.title && (
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary"
-                    sx={{
-                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                      lineHeight: 1.4,
-                    }}
-                    textAlign="center"
-                  >
-                    {stat.title}
-                  </Typography>
-                )}
-              </Box>
-            </Paper>
-          </Grid>
-        ))}
+                {statCards[0].value}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.8rem' },
+                  lineHeight: 1.4,
+                }}
+                textAlign="center"
+              >
+                {statCards[0].subtitle}
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} sm={3} md={3}>
+          <Paper
+            elevation={2}
+            sx={{
+              p: { xs: 1.5, sm: 2.5 },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              minHeight: { xs: 115, sm: 130, md: 140 },
+              transition: 'transform 0.2s, box-shadow 0.2s',
+            }}
+          >
+            <Box
+              sx={{
+                width: { xs: 36, sm: 48, md: 52 },
+                height: { xs: 36, sm: 48, md: 52 },
+                minWidth: { xs: 36, sm: 48, md: 52 },
+                borderRadius: 1.5,
+                backgroundColor: `${statCards[1].color}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: statCards[1].color,
+                flexShrink: 0,
+                mb: { xs: 1, sm: 1.5 },
+              }}
+            >
+              {React.cloneElement(statCards[1].icon, { sx: { fontSize: { xs: 20, sm: 26, md: 28 } } })}
+            </Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0, textAlign: 'center' }}>
+              <Typography 
+                fontWeight="bold"
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem', md: '0.95rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.5, sm: 0.5 },
+                  color: statCards[1].color,
+                }}
+              >
+                {statCards[1].value}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                  lineHeight: 1.4,
+                }}
+                textAlign="center"
+              >
+                {statCards[1].title}
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} sm={3} md={3}>
+          <Paper
+            elevation={2}
+            sx={{
+              p: { xs: 1.5, sm: 2.5 },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              minHeight: { xs: 115, sm: 130, md: 140 },
+              transition: 'transform 0.2s, box-shadow 0.2s',
+            }}
+          >
+            <Box
+              sx={{
+                width: { xs: 36, sm: 48, md: 52 },
+                height: { xs: 36, sm: 48, md: 52 },
+                minWidth: { xs: 36, sm: 48, md: 52 },
+                borderRadius: 1.5,
+                backgroundColor: `${statCards[2].color}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: statCards[2].color,
+                flexShrink: 0,
+                mb: { xs: 1, sm: 1.5 },
+              }}
+            >
+              {React.cloneElement(statCards[2].icon, { sx: { fontSize: { xs: 20, sm: 26, md: 28 } } })}
+            </Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0, textAlign: 'center' }}>
+              <Typography 
+                fontWeight="bold"
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem', md: '0.95rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.5, sm: 0.5 },
+                  color: statCards[2].color,
+                }}
+              >
+                {statCards[2].value}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                  lineHeight: 1.4,
+                }}
+                textAlign="center"
+              >
+                {statCards[2].title}
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+        {/* Row 2: Total Revenue, Pending Orders, Sales Without Receipts, Low Stock (4 cards, with last one wrapping) */}
+        <Grid item xs={6} sm={3} md={3}>
+          <Paper
+            elevation={2}
+            sx={{
+              p: { xs: 1.5, sm: 2.5 },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              minHeight: { xs: 115, sm: 130, md: 140 },
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              position: 'relative',
+              overflow: 'visible',
+              '&:hover': {
+                transform: { xs: 'none', sm: 'translateY(-4px)' },
+                boxShadow: { xs: 2, sm: 4 },
+              },
+            }}
+          >
+            <Box
+              sx={{
+                width: { xs: 36, sm: 48, md: 52 },
+                height: { xs: 36, sm: 48, md: 52 },
+                minWidth: { xs: 36, sm: 48, md: 52 },
+                borderRadius: 1.5,
+                backgroundColor: `${statCards[3].color}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: statCards[3].color,
+                flexShrink: 0,
+                mb: { xs: 1, sm: 1.5 },
+              }}
+            >
+              {React.cloneElement(statCards[3].icon, { sx: { fontSize: { xs: 20, sm: 26, md: 28 } } })}
+            </Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0, textAlign: 'center' }}>
+              <Typography 
+                fontWeight="bold"
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem', md: '0.95rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.5, sm: 0.5 },
+                  color: statCards[3].color,
+                }}
+              >
+                {statCards[3].value}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                  lineHeight: 1.4,
+                }}
+                textAlign="center"
+              >
+                {statCards[3].title}
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} sm={3} md={3}>
+          <Paper
+            elevation={2}
+            sx={{
+              p: { xs: 1.5, sm: 2.5 },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              minHeight: { xs: 125, sm: 140, md: 150 },
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              position: 'relative',
+              overflow: 'visible',
+              '&:hover': {
+                transform: { xs: 'none', sm: 'translateY(-4px)' },
+                boxShadow: { xs: 2, sm: 4 },
+              },
+            }}
+          >
+            {statCards[4].hasAlert && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  width: { xs: 14, sm: 16 },
+                  height: { xs: 14, sm: 16 },
+                  borderRadius: '50%',
+                  backgroundColor: '#ff0000',
+                  zIndex: 1000,
+                  boxShadow: '0 0 15px rgba(255, 0, 0, 1), 0 0 30px rgba(255, 0, 0, 0.8), 0 0 45px rgba(255, 0, 0, 0.6)',
+                  animation: 'pulseAlert 1s ease-in-out infinite',
+                }}
+              />
+            )}
+            <Box
+              sx={{
+                width: { xs: 36, sm: 48, md: 52 },
+                height: { xs: 36, sm: 48, md: 52 },
+                minWidth: { xs: 36, sm: 48, md: 52 },
+                borderRadius: 1.5,
+                backgroundColor: `${statCards[4].color}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: statCards[4].color,
+                flexShrink: 0,
+                mb: { xs: 1, sm: 1.5 },
+              }}
+            >
+              {React.cloneElement(statCards[4].icon, { sx: { fontSize: { xs: 20, sm: 26, md: 28 } } })}
+            </Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0, textAlign: 'center' }}>
+              <Typography 
+                fontWeight="bold"
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem', md: '0.95rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.5, sm: 0.5 },
+                  color: statCards[4].color,
+                }}
+              >
+                {statCards[4].value}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.8rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.25, sm: 0.5 },
+                  fontWeight: 500,
+                }}
+                textAlign="center"
+              >
+                {statCards[4].subtitle}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                  lineHeight: 1.4,
+                }}
+                textAlign="center"
+              >
+                {statCards[4].title}
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* Row 3: Sales Without Receipts, Low Stock Products (2 items for small devices) */}
+        <Grid item xs={6} sm={3} md={3}>
+          <Paper
+            elevation={2}
+            sx={{
+              p: { xs: 1.5, sm: 2.5 },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              minHeight: { xs: 125, sm: 140, md: 150 },
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              position: 'relative',
+              overflow: 'visible',
+              '&:hover': {
+                transform: { xs: 'none', sm: 'translateY(-4px)' },
+                boxShadow: { xs: 2, sm: 4 },
+              },
+            }}
+          >
+            {statCards[5].hasAlert && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  width: { xs: 14, sm: 16 },
+                  height: { xs: 14, sm: 16 },
+                  borderRadius: '50%',
+                  backgroundColor: '#ff0000',
+                  zIndex: 1000,
+                  boxShadow: '0 0 15px rgba(255, 0, 0, 1), 0 0 30px rgba(255, 0, 0, 0.8), 0 0 45px rgba(255, 0, 0, 0.6)',
+                  animation: 'pulseAlert 1s ease-in-out infinite',
+                }}
+              />
+            )}
+            <Box
+              sx={{
+                width: { xs: 36, sm: 48, md: 52 },
+                height: { xs: 36, sm: 48, md: 52 },
+                minWidth: { xs: 36, sm: 48, md: 52 },
+                borderRadius: 1.5,
+                backgroundColor: `${statCards[5].color}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: statCards[5].color,
+                flexShrink: 0,
+                mb: { xs: 1, sm: 1.5 },
+              }}
+            >
+              {React.cloneElement(statCards[5].icon, { sx: { fontSize: { xs: 20, sm: 26, md: 28 } } })}
+            </Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0, textAlign: 'center' }}>
+              <Typography 
+                fontWeight="bold"
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem', md: '0.95rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.5, sm: 0.5 },
+                  color: statCards[5].color,
+                }}
+              >
+                {statCards[5].value}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.8rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.25, sm: 0.5 },
+                  fontWeight: 500,
+                }}
+                textAlign="center"
+              >
+                {statCards[5].subtitle}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                  lineHeight: 1.4,
+                }}
+                textAlign="center"
+              >
+                {statCards[5].title}
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+        <Grid item xs={6} sm={3} md={3}>
+          <Paper
+            elevation={2}
+            sx={{
+              p: { xs: 1.5, sm: 2.5 },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              minHeight: { xs: 125, sm: 140, md: 150 },
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              position: 'relative',
+              overflow: 'visible',
+              '&:hover': {
+                transform: { xs: 'none', sm: 'translateY(-4px)' },
+                boxShadow: { xs: 2, sm: 4 },
+              },
+            }}
+          >
+            {statCards[6].hasAlert && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  width: { xs: 14, sm: 16 },
+                  height: { xs: 14, sm: 16 },
+                  borderRadius: '50%',
+                  backgroundColor: '#ff0000',
+                  zIndex: 1000,
+                  boxShadow: '0 0 15px rgba(255, 0, 0, 1), 0 0 30px rgba(255, 0, 0, 0.8), 0 0 45px rgba(255, 0, 0, 0.6)',
+                  animation: 'pulseAlert 1s ease-in-out infinite',
+                }}
+              />
+            )}
+            <Box
+              sx={{
+                width: { xs: 36, sm: 48, md: 52 },
+                height: { xs: 36, sm: 48, md: 52 },
+                minWidth: { xs: 36, sm: 48, md: 52 },
+                borderRadius: 1.5,
+                backgroundColor: `${statCards[6].color}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: statCards[6].color,
+                flexShrink: 0,
+                mb: { xs: 1, sm: 1.5 },
+              }}
+            >
+              {React.cloneElement(statCards[6].icon, { sx: { fontSize: { xs: 20, sm: 26, md: 28 } } })}
+            </Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0, textAlign: 'center' }}>
+              <Typography 
+                fontWeight="bold"
+                sx={{ 
+                  fontSize: { xs: '0.8rem', sm: '0.875rem', md: '0.95rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.5, sm: 0.5 },
+                  color: statCards[6].color,
+                }}
+              >
+                {statCards[6].value}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.8rem' },
+                  lineHeight: 1.3,
+                  mb: { xs: 0.25, sm: 0.5 },
+                  fontWeight: 500,
+                }}
+                textAlign="center"
+              >
+                {statCards[6].subtitle}
+              </Typography>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.875rem' },
+                  lineHeight: 1.4,
+                }}
+                textAlign="center"
+              >
+                {statCards[6].title}
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
       </Grid>
 
       {/* Charts Section */}
@@ -411,7 +816,7 @@ function Dashboard() {
             <ActivityFeed limit={5} />
           </Grid>
           <Grid item xs={12} md={6}>
-            <CostSavingsCalculator />
+            <ExpandableCostSavingsCalculator />
           </Grid>
         </Grid>
       </Box>
