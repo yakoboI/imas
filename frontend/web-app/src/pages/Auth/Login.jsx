@@ -74,27 +74,56 @@ function Login() {
 
   // Check if user has passkeys when email changes
   useEffect(() => {
+    // Reset state when email is cleared
+    if (!formData.email || !validateEmail(formData.email)) {
+      setHasPasskeys(null);
+      setCheckingPasskeys(false);
+      return;
+    }
+
+    if (!passkeySupported) {
+      setHasPasskeys(null);
+      return;
+    }
+
+    let cancelled = false;
+
     const checkUserPasskeys = async () => {
+      // Double-check conditions after debounce
       if (!formData.email || !validateEmail(formData.email) || !passkeySupported) {
-        setHasPasskeys(null); // Reset to not checked
+        if (!cancelled) {
+          setHasPasskeys(null);
+        }
         return;
       }
 
-      setCheckingPasskeys(true);
+      if (!cancelled) {
+        setCheckingPasskeys(true);
+      }
+
       try {
-        const hasKeys = await passkeyService.checkPasskeys(formData.email);
-        setHasPasskeys(hasKeys);
+        const hasKeys = await passkeyService.checkPasskeys(formData.email.trim().toLowerCase());
+        if (!cancelled) {
+          setHasPasskeys(hasKeys);
+        }
       } catch (error) {
         // On error, don't assume no passkeys - just don't show the message
-        setHasPasskeys(null);
+        if (!cancelled) {
+          setHasPasskeys(null);
+        }
       } finally {
-        setCheckingPasskeys(false);
+        if (!cancelled) {
+          setCheckingPasskeys(false);
+        }
       }
     };
 
     // Debounce the check
     const timer = setTimeout(checkUserPasskeys, 500);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [formData.email, passkeySupported]);
 
   const validateEmail = (email) => {

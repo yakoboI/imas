@@ -177,7 +177,15 @@ class PasskeyController {
       }
 
       const User = require('../models/User');
-      const user = await User.findOne({ where: { email } });
+      const { Op } = require('sequelize');
+      // Case-insensitive email lookup
+      const user = await User.findOne({ 
+        where: { 
+          email: {
+            [Op.iLike]: email // PostgreSQL case-insensitive
+          }
+        } 
+      });
 
       if (!user) {
         return res.json({ hasPasskeys: false });
