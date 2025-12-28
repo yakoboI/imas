@@ -13,37 +13,73 @@ const AuthService = require('./authService');
 // Get Relying Party info from environment or use defaults
 const rpName = process.env.RP_NAME || 'IMAS Inventory System';
 
+// Helper function to safely convert input to string
+const safeString = (input) => {
+  if (input == null) return null;
+  if (typeof input === 'string') return input;
+  if (Array.isArray(input)) return input[0] ? String(input[0]) : null;
+  if (typeof input === 'object') return null; // Don't try to stringify objects
+  return String(input);
+};
+
 // Helper function to extract domain from URL (remove protocol and trailing slash)
 const extractDomain = (url) => {
-  if (!url || typeof url !== 'string') return null;
-  return url.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0];
+  const urlString = safeString(url);
+  if (!urlString) return null;
+  try {
+    return urlString.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0];
+  } catch (error) {
+    console.error('[PasskeyService] Error extracting domain from:', url, error);
+    return null;
+  }
 };
 
 // Helper function to ensure HTTPS in production
 const ensureHttps = (url) => {
-  if (!url || typeof url !== 'string') return url;
-  if (process.env.NODE_ENV === 'production' && url.startsWith('http://') && !url.includes('localhost')) {
-    return url.replace('http://', 'https://');
+  const urlString = safeString(url);
+  if (!urlString) return urlString;
+  try {
+    if (process.env.NODE_ENV === 'production' && urlString.startsWith('http://') && !urlString.includes('localhost')) {
+      return urlString.replace('http://', 'https://');
+    }
+    return urlString;
+  } catch (error) {
+    console.error('[PasskeyService] Error ensuring HTTPS for:', url, error);
+    return urlString;
   }
-  return url;
 };
 
 // RP ID must be just the domain name (no protocol, no path)
 // Priority: RP_ID > DOMAIN > FRONTEND_URL > localhost
 let rpID = 'localhost';
-if (process.env.RP_ID) {
-  rpID = extractDomain(process.env.RP_ID);
-} else if (process.env.NODE_ENV === 'production') {
-  rpID = extractDomain(process.env.DOMAIN) || extractDomain(process.env.FRONTEND_URL) || 'localhost';
+try {
+  if (process.env.RP_ID) {
+    const extracted = extractDomain(process.env.RP_ID);
+    if (extracted) rpID = extracted;
+  } else if (process.env.NODE_ENV === 'production') {
+    const domainExtracted = extractDomain(process.env.DOMAIN);
+    const frontendExtracted = extractDomain(process.env.FRONTEND_URL);
+    rpID = domainExtracted || frontendExtracted || 'localhost';
+  }
+} catch (error) {
+  console.error('[PasskeyService] Error setting RP_ID:', error);
+  rpID = 'localhost';
 }
 
 // Origin must be the full URL with protocol
 // Priority: ORIGIN > FRONTEND_URL (with HTTPS in production) > localhost
 let origin = 'http://localhost:3000';
-if (process.env.ORIGIN) {
-  origin = ensureHttps(process.env.ORIGIN);
-} else if (process.env.NODE_ENV === 'production') {
-  origin = ensureHttps(process.env.FRONTEND_URL) || 'https://app.inventora.store';
+try {
+  if (process.env.ORIGIN) {
+    const ensured = ensureHttps(process.env.ORIGIN);
+    if (ensured) origin = ensured;
+  } else if (process.env.NODE_ENV === 'production') {
+    const frontendEnsured = ensureHttps(process.env.FRONTEND_URL);
+    origin = frontendEnsured || 'https://app.inventora.store';
+  }
+} catch (error) {
+  console.error('[PasskeyService] Error setting ORIGIN:', error);
+  origin = process.env.NODE_ENV === 'production' ? 'https://app.inventora.store' : 'http://localhost:3000';
 }
 
 // Log configuration in production for debugging (only once at startup)

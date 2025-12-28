@@ -27,13 +27,22 @@ const authService = {
 
   // Passkey login methods
   passkeyLogin: async (email) => {
+    // Normalize email: ensure it's a string and trim/lowercase
+    if (!email || typeof email !== 'string') {
+      throw new Error('Email is required and must be a string');
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new Error('Email cannot be empty');
+    }
+
     const passkeyService = (await import('./passkeyService')).default;
     
-    // Start authentication
-    const options = await passkeyService.startAuthentication(email);
+    // Start authentication (will normalize again internally, but use normalized here for consistency)
+    const options = await passkeyService.startAuthentication(normalizedEmail);
     
-    // Complete authentication
-    const result = await passkeyService.completeAuthentication(email, options);
+    // Complete authentication (will normalize again internally, but use normalized here for consistency)
+    const result = await passkeyService.completeAuthentication(normalizedEmail, options);
     
     // Store token and user info (same as password login)
     if (result.token) {

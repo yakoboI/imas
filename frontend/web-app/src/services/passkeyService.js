@@ -75,7 +75,15 @@ const passkeyService = {
    * Start passkey authentication - get challenge from server
    */
   startAuthentication: async (email) => {
-    const response = await api.post('/auth/passkey/login', { email });
+    // Normalize email: ensure it's a string
+    if (!email || typeof email !== 'string') {
+      throw new Error('Email is required and must be a string');
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new Error('Email cannot be empty');
+    }
+    const response = await api.post('/auth/passkey/login', { email: normalizedEmail });
     return response.data.options;
   },
 
@@ -83,6 +91,15 @@ const passkeyService = {
    * Complete passkey authentication - send credential to server
    */
   completeAuthentication: async (email, options) => {
+    // Normalize email: ensure it's a string
+    if (!email || typeof email !== 'string') {
+      throw new Error('Email is required and must be a string');
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new Error('Email cannot be empty');
+    }
+
     // Check if we're on HTTPS (required for passkeys in production)
     if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
       throw new Error('Passkeys require HTTPS. Please access the site using HTTPS.');
@@ -106,7 +123,7 @@ const passkeyService = {
     // Send credential to server for verification
     try {
       const response = await api.post('/auth/passkey/login/complete', {
-        email,
+        email: normalizedEmail,
         credential
       });
       return response.data;
