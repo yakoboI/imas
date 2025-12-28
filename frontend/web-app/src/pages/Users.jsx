@@ -47,6 +47,7 @@ function Users() {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, user: null });
   const [addDialog, setAddDialog] = useState(false);
+  const [editDialog, setEditDialog] = useState({ open: false, user: null });
   const [userLimit, setUserLimit] = useState({ current: 0, max: 5, remaining: 5, canAddMore: true });
   const [tenantInfo, setTenantInfo] = useState(null);
   const [loadingTenantInfo, setLoadingTenantInfo] = useState(false);
@@ -56,6 +57,18 @@ function Users() {
     first_name: '',
     last_name: '',
     role: 'viewer',
+  });
+  const [editFormData, setEditFormData] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    role: 'viewer',
+    status: 'active',
+    employee_id: '',
+    department: '',
+    position: '',
+    employment_date: '',
+    reports_to: '',
   });
 
   useEffect(() => {
@@ -114,6 +127,47 @@ function Users() {
   const handleAdd = () => {
     setFormData({ email: '', password: '', first_name: '', last_name: '', role: 'viewer' });
     setAddDialog(true);
+  };
+
+  const handleEdit = async (userToEdit) => {
+    try {
+      // Fetch full user data including employment fields
+      const userData = await userManagementService.getUserById(userToEdit.id);
+      const user = userData.user || userData;
+      
+      setEditFormData({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        phone: user.phone || '',
+        role: user.role || 'viewer',
+        status: user.status || 'active',
+        employee_id: user.employee_id || '',
+        department: user.department || '',
+        position: user.position || '',
+        employment_date: user.employment_date ? new Date(user.employment_date).toISOString().split('T')[0] : '',
+        reports_to: user.reports_to || '',
+      });
+      setEditDialog({ open: true, user: userToEdit });
+    } catch (error) {
+      toast.error('Failed to load user data');
+      console.error('Error loading user:', error);
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!editDialog.user) return;
+    
+    try {
+      await userManagementService.updateUser(editDialog.user.id, editFormData);
+      toast.success('User updated successfully');
+      setEditDialog({ open: false, user: null });
+      loadUsers();
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to update user';
+      toast.error(errorMessage);
+    }
   };
 
   const handleAddSubmit = async (e) => {
@@ -310,6 +364,7 @@ function Users() {
                     <IconButton 
                       size="small" 
                       color="primary"
+                      onClick={() => handleEdit(u)}
                       sx={{ padding: { xs: '4px', sm: '8px' } }}
                     >
                       <Edit fontSize="small" />
@@ -431,6 +486,160 @@ function Users() {
               size={isSmallScreen ? 'small' : 'medium'}
             >
               Add User
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={editDialog.open}
+        onClose={() => setEditDialog({ open: false, user: null })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <form onSubmit={handleEditSubmit}>
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Edit User</span>
+              {isSmallScreen && (
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  onClick={() => setEditDialog({ open: false, user: null })}
+                  aria-label="close"
+                  size="small"
+                >
+                  <Close />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="First Name"
+                  name="first_name"
+                  value={editFormData.first_name}
+                  onChange={(e) => setEditFormData({ ...editFormData, first_name: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  name="last_name"
+                  value={editFormData.last_name}
+                  onChange={(e) => setEditFormData({ ...editFormData, last_name: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Phone"
+                  name="phone"
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Role"
+                  name="role"
+                  value={editFormData.role}
+                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                  SelectProps={{ native: true }}
+                >
+                  <option value="viewer">Viewer</option>
+                  <option value="inventory_staff">Inventory Staff</option>
+                  <option value="sales_staff">Sales Staff</option>
+                  <option value="inventory_manager">Inventory Manager</option>
+                  <option value="sales_manager">Sales Manager</option>
+                  <option value="accountant">Accountant</option>
+                  <option value="admin">Admin</option>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Status"
+                  name="status"
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                  SelectProps={{ native: true }}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Employee ID"
+                  name="employee_id"
+                  value={editFormData.employee_id}
+                  onChange={(e) => setEditFormData({ ...editFormData, employee_id: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Department"
+                  name="department"
+                  value={editFormData.department}
+                  onChange={(e) => setEditFormData({ ...editFormData, department: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Position"
+                  name="position"
+                  value={editFormData.position}
+                  onChange={(e) => setEditFormData({ ...editFormData, position: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Employment Date"
+                  name="employment_date"
+                  type="date"
+                  value={editFormData.employment_date}
+                  onChange={(e) => setEditFormData({ ...editFormData, employment_date: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Reports To (User ID)"
+                  name="reports_to"
+                  value={editFormData.reports_to}
+                  onChange={(e) => setEditFormData({ ...editFormData, reports_to: e.target.value })}
+                  helperText="Enter the user ID of the manager this user reports to"
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => setEditDialog({ open: false, user: null })}
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              size={isSmallScreen ? 'small' : 'medium'}
+            >
+              Update User
             </Button>
           </DialogActions>
         </form>

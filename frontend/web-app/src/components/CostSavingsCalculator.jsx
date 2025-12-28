@@ -105,13 +105,6 @@ function CostSavingsCalculator() {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Calculate sx={{ color: 'primary.main' }} />
-        Cost Savings Calculator
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Estimate potential cost savings from using IMAS inventory management system
-      </Typography>
 
       <Grid container spacing={3}>
         {/* Input Section */}

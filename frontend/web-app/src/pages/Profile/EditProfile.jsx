@@ -103,7 +103,7 @@ function EditProfile() {
     try {
       await dispatch(updateProfile(formData)).unwrap();
       toast.success('Profile updated successfully');
-      navigate('/profile');
+      navigate('/app/profile');
     } catch (err) {
       const errorMessage = typeof err === 'string' ? err : err?.message || 'Failed to update profile';
       setError(errorMessage);
@@ -122,7 +122,7 @@ function EditProfile() {
         }}>
           <Button 
             startIcon={<ArrowBack />} 
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate('/app/profile')}
             size={isSmallScreen ? 'small' : 'medium'}
           >
             Back

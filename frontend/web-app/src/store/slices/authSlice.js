@@ -48,6 +48,20 @@ export const register = createAsyncThunk(
   }
 );
 
+export const passkeyLogin = createAsyncThunk(
+  'auth/passkeyLogin',
+  async (email, { rejectWithValue }) => {
+    try {
+      const response = await authService.passkeyLogin(email);
+      // Note: authService.passkeyLogin already stores token and user in localStorage
+      // But we need to ensure state is properly updated
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || error.message);
+    }
+  }
+);
+
 // Helper to safely parse JSON from localStorage
 const safeParseJSON = (key, defaultValue = null) => {
   try {
@@ -112,6 +126,26 @@ const authSlice = createSlice({
         state.loading = false;
       })
       .addCase(register.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Passkey Login
+      .addCase(passkeyLogin.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(passkeyLogin.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        // Ensure localStorage is in sync (authService.passkeyLogin already stores it, but ensure it's correct)
+        if (action.payload.token) {
+          localStorage.setItem('token', action.payload.token);
+          localStorage.setItem('user', JSON.stringify(action.payload.user));
+        }
+      })
+      .addCase(passkeyLogin.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

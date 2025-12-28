@@ -29,23 +29,78 @@ const migrations = [
 async function runAllMigrations() {
   console.log('🚀 Starting All Migrations on Railway Database...\n');
 
-  // Railway database configuration
+  // Check for production environment
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (!isProduction) {
+    console.log('⚠️  NODE_ENV is not set to "production"');
+    console.log('   Setting NODE_ENV=production for Railway connection...\n');
+  }
+
+  // Railway database configuration - prioritize Railway env vars
+  // When using Railway CLI locally, use public proxy domain
+  const usePublicProxy = !process.env.RAILWAY_REPLICA_ID; // Replica ID only exists when running on Railway
+  const dbHost = usePublicProxy
+    ? (process.env.RAILWAY_TCP_PROXY_DOMAIN || process.env.DB_HOST || 'yamabiko.proxy.rlwy.net')
+    : (process.env.PGHOST || process.env.RAILWAY_PRIVATE_DOMAIN || process.env.DB_HOST);
+  const dbPort = usePublicProxy
+    ? (process.env.RAILWAY_TCP_PROXY_PORT || process.env.DB_PORT || 5432)
+    : (process.env.PGPORT || process.env.DB_PORT || 5432);
+  const dbName = process.env.PGDATABASE || process.env.POSTGRES_DB || process.env.DB_NAME || 'railway';
+  const dbUser = process.env.PGUSER || process.env.POSTGRES_USER || process.env.DB_USER || 'postgres';
+  const dbPassword = process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD || process.env.DB_PASSWORD;
+  
+  // Detect if connecting to localhost
+  const isLocalhost = dbHost === 'localhost' || dbHost === '127.0.0.1';
+  
+  // Enable SSL for Railway (never for localhost)
+  const enableSSL = !isLocalhost && (
+    process.env.DB_SSL === 'true' || 
+    process.env.RAILWAY_ENVIRONMENT === 'production' ||
+    dbHost?.includes('railway') || 
+    dbHost?.includes('rlwy') ||
+    dbHost?.includes('proxy.rlwy.net') ||
+    process.env.RAILWAY_TCP_PROXY_DOMAIN
+  );
+  
+  // Require Railway credentials for production
+  if (isProduction && isLocalhost && !process.env.RAILWAY_TCP_PROXY_DOMAIN) {
+    console.error('❌ Error: NODE_ENV=production but connecting to localhost!');
+    console.error('   For Railway production, you need Railway database credentials.');
+    console.error('\n   Option 1: Set Railway environment variables:');
+    console.error('   - RAILWAY_TCP_PROXY_DOMAIN (or DB_HOST)');
+    console.error('   - RAILWAY_TCP_PROXY_PORT (or DB_PORT)');
+    console.error('   - PGDATABASE (or DB_NAME)');
+    console.error('   - PGUSER (or DB_USER)');
+    console.error('   - PGPASSWORD (or DB_PASSWORD)');
+    console.error('\n   Option 2: Use Railway CLI:');
+    console.error('   railway run node run-all-migrations-railway.js');
+    process.exit(1);
+  }
+  
   const dbConfig = {
-    host: process.env.DB_HOST || 'yamabiko.proxy.rlwy.net',
-    port: parseInt(process.env.DB_PORT || '42342'),
-    database: process.env.DB_NAME || 'railway',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD,
-    ssl: {
+    host: dbHost,
+    port: parseInt(dbPort),
+    database: dbName,
+    user: dbUser,
+    password: dbPassword,
+    ssl: enableSSL ? {
       rejectUnauthorized: false
-    }
+    } : false
   };
 
   // Validate credentials
   if (!dbConfig.password) {
-    console.error('❌ Error: DB_PASSWORD is required');
-    console.error('   Set it as: $env:DB_PASSWORD="your-password"');
+    console.error('❌ Error: Database password is required');
+    console.error('   Set one of: PGPASSWORD, POSTGRES_PASSWORD, or DB_PASSWORD');
+    console.error('   Example: $env:PGPASSWORD="your-password"');
+    console.error('   Or use Railway CLI: railway run node run-all-migrations-railway.js');
     process.exit(1);
+  }
+
+  // Warn if connecting to localhost
+  if (dbHost === 'localhost' || dbHost === '127.0.0.1') {
+    console.log('⚠️  WARNING: Connecting to LOCAL database, not Railway production!');
+    console.log('   To connect to Railway, set Railway environment variables or use Railway CLI.\n');
   }
 
   console.log('📋 Database Configuration:');
@@ -53,7 +108,8 @@ async function runAllMigrations() {
   console.log(`   Port: ${dbConfig.port}`);
   console.log(`   Database: ${dbConfig.database}`);
   console.log(`   User: ${dbConfig.user}`);
-  console.log(`   SSL: Enabled\n`);
+  console.log(`   SSL: ${enableSSL ? 'Enabled (Railway)' : 'Disabled'}`);
+  console.log(`   Environment: ${process.env.NODE_ENV || 'not set'}\n`);
 
   const pool = new Pool(dbConfig);
 

@@ -140,7 +140,7 @@ function NotificationSettings() {
         }}>
           <Button 
             startIcon={<ArrowBack />} 
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate('/app/profile')}
             size={isSmallScreen ? 'small' : 'medium'}
           >
             Back

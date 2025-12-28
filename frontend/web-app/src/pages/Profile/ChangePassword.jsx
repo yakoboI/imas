@@ -53,7 +53,7 @@ function ChangePassword() {
     try {
       await dispatch(changePassword(formData)).unwrap();
       toast.success('Password changed successfully');
-      navigate('/profile');
+      navigate('/app/profile');
     } catch (err) {
       setError(err);
       toast.error(err || 'Failed to change password');
@@ -71,7 +71,7 @@ function ChangePassword() {
         }}>
           <Button 
             startIcon={<ArrowBack />} 
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate('/app/profile')}
             size={isSmallScreen ? 'small' : 'medium'}
           >
             Back

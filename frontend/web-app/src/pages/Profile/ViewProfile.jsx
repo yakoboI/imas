@@ -124,7 +124,7 @@ function ViewProfile() {
         <Button
           variant="contained"
           startIcon={<Edit />}
-          onClick={() => navigate('/profile/edit')}
+          onClick={() => navigate('/app/profile/edit')}
           size={isSmallScreen ? 'small' : 'medium'}
           sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
@@ -393,7 +393,7 @@ function ViewProfile() {
               <Button
                 variant="outlined"
                 startIcon={<Lock sx={{ fontSize: { xs: 18, sm: 20 } }} />}
-                onClick={() => navigate('/profile/password')}
+                onClick={() => navigate('/app/profile/password')}
                 fullWidth={isSmallScreen}
                 size={isSmallScreen ? 'small' : 'medium'}
                 sx={{ 
@@ -408,7 +408,7 @@ function ViewProfile() {
               <Button
                 variant="outlined"
                 startIcon={<Notifications sx={{ fontSize: { xs: 18, sm: 20 } }} />}
-                onClick={() => navigate('/profile/notifications')}
+                onClick={() => navigate('/app/profile/notifications')}
                 fullWidth={isSmallScreen}
                 size={isSmallScreen ? 'small' : 'medium'}
                 sx={{ 
@@ -423,7 +423,7 @@ function ViewProfile() {
               <Button
                 variant="outlined"
                 startIcon={<Fingerprint sx={{ fontSize: { xs: 18, sm: 20 } }} />}
-                onClick={() => navigate('/profile/passkeys')}
+                onClick={() => navigate('/app/profile/passkeys')}
                 fullWidth={isSmallScreen}
                 size={isSmallScreen ? 'small' : 'medium'}
                 sx={{ 

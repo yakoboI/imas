@@ -28,7 +28,7 @@ import {
   Login as LoginIcon,
   Fingerprint as FingerprintIcon,
 } from '@mui/icons-material';
-import { login, clearError } from '../../store/slices/authSlice';
+import { login, passkeyLogin, clearError } from '../../store/slices/authSlice';
 import SEO from '../../components/SEO';
 import passkeyService from '../../services/passkeyService';
 import authService from '../../services/authService';
@@ -198,20 +198,12 @@ function Login() {
     dispatch(clearError());
 
     try {
-      const result = await authService.passkeyLogin(formData.email);
-      
-      // Dispatch login action to update Redux state
-      dispatch({
-        type: 'auth/login/fulfilled',
-        payload: result
-      });
-
+      // Use the passkeyLogin thunk to properly handle state updates
+      await dispatch(passkeyLogin(formData.email)).unwrap();
       // Navigate will happen automatically via useEffect when isAuthenticated becomes true
     } catch (error) {
-      dispatch({
-        type: 'auth/login/rejected',
-        payload: error.response?.data?.error || error.message || 'Passkey login failed'
-      });
+      // Error is already handled by the thunk and stored in state.error
+      // Just ensure loading state is reset
     } finally {
       setPasskeyLoading(false);
     }
@@ -551,7 +543,7 @@ function Login() {
                     fullWidth
                     variant="contained"
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LoginIcon />}
-                    disabled={loading || !isFormValid}
+                    disabled={loading || passkeyLoading || !isFormValid}
                     sx={{
                       mt: { xs: 2, sm: 3 },
                       mb: { xs: 1.5, sm: 2 },
