@@ -1,5 +1,7 @@
 const PasskeyService = require('../services/passkeyService');
 const AuditService = require('../services/auditService');
+const User = require('../models/User');
+const { Op } = require('sequelize');
 
 class PasskeyController {
   /**
@@ -201,6 +203,11 @@ class PasskeyController {
         email = String(email);
       }
       const normalizedEmail = email.trim().toLowerCase();
+
+      if (!normalizedEmail) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+
       const user = await User.findOne({ 
         where: { 
           email: {
@@ -217,6 +224,7 @@ class PasskeyController {
 
       res.json({ hasPasskeys });
     } catch (error) {
+      console.error('Check passkeys error:', error);
       res.status(400).json({ error: error.message });
     }
   }
