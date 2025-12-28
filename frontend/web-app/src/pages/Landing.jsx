@@ -24,6 +24,12 @@ import {
   TrendingUp,
   CheckCircle,
   ArrowForward,
+  Payment,
+  Receipt,
+  Fingerprint,
+  Assessment,
+  IntegrationInstructions,
+  AccountBalance,
 } from '@mui/icons-material';
 import SEO from '../components/SEO';
 
@@ -64,15 +70,57 @@ const features = [
     description: 'Optimized performance with offline mode and efficient synchronization.',
     color: '#fa709a',
   },
+  {
+    icon: <Payment />,
+    title: 'Payment Integrations',
+    description: 'Accept payments via Pesapal, Flutterwave, and DPO Pay. Multiple payment gateways supported.',
+    color: '#00d4ff',
+  },
+  {
+    icon: <AccountBalance />,
+    title: 'Tax Compliance',
+    description: 'Automatic TRA EFDMS integration for Tanzania. Submit invoices and generate Z-Reports automatically.',
+    color: '#ff6b6b',
+  },
+  {
+    icon: <Fingerprint />,
+    title: 'Passkey Authentication',
+    description: 'Passwordless login with biometric security. Use TouchID, FaceID, or Windows Hello.',
+    color: '#4ecdc4',
+  },
+  {
+    icon: <Receipt />,
+    title: 'Receipt Management',
+    description: 'Professional receipt generation with PDF export, email delivery, and thermal printing support.',
+    color: '#95e1d3',
+  },
+  {
+    icon: <Assessment />,
+    title: 'Comprehensive Reporting',
+    description: 'Generate detailed reports for sales, inventory, orders, and customers. Export to CSV with custom date ranges.',
+    color: '#f38181',
+  },
+  {
+    icon: <IntegrationInstructions />,
+    title: 'Third-Party Integrations',
+    description: 'Connect with Shopify, QuickBooks, Xero, and WhatsApp Business. Seamless data synchronization.',
+    color: '#a8e6cf',
+  },
 ];
 
 const benefits = [
   'Reduce inventory costs and waste',
+  'Accept payments via multiple gateways (Pesapal, Flutterwave, DPO)',
+  'Automatic tax compliance with TRA EFDMS integration',
+  'Passwordless login with biometric security (Passkeys)',
+  'Professional receipt generation with PDF export',
+  'Comprehensive reporting with CSV export',
+  'Integrate with Shopify, QuickBooks, Xero, and WhatsApp',
   'High availability and reliability',
   'Efficient data synchronization',
-  'Scalable architecture',
-  'Mobile-first design',
-  '24/7 cloud access',
+  'Scalable multi-tenant architecture',
+  'Mobile-first responsive design',
+  '24/7 cloud access from anywhere',
 ];
 
 function Landing() {
@@ -263,7 +311,7 @@ function Landing() {
 
         <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
           {features.map((feature, index) => (
-            <Grid item xs={4} sm={4} md={4} key={index}>
+            <Grid item xs={6} sm={6} md={4} key={index}>
               <Card
                 sx={{
                   height: '100%',
@@ -391,8 +439,9 @@ function Landing() {
                   fontFamily: '"Lucida Handwriting", cursive',
                 }}
               >
-                Experience enterprise-grade inventory management with comprehensive features,
-                designed to help you scale efficiently and make informed decisions with real-time data.
+                Experience enterprise-grade inventory management with comprehensive features including payment integrations,
+                tax compliance automation, passwordless authentication, and seamless third-party connections.
+                Designed to help you scale efficiently and make informed decisions with real-time data and advanced analytics.
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                 {benefits.map((benefit, index) => (
@@ -465,10 +514,12 @@ function Landing() {
                 </Typography>
                 <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }} sx={{ position: 'relative', zIndex: 1 }}>
                   {[
-                    { label: 'Startups', desc: 'Launch faster with instant setup' },
-                    { label: 'SMBs', desc: 'Scale without complexity' },
-                    { label: 'Enterprises', desc: 'Multi-warehouse at scale' },
-                    { label: 'Retailers', desc: 'Real-time inventory control' },
+                    { label: 'Startups', desc: 'Launch faster with instant setup and payment integrations' },
+                    { label: 'SMBs', desc: 'Scale without complexity with comprehensive reporting' },
+                    { label: 'Enterprises', desc: 'Multi-warehouse at scale with tax compliance' },
+                    { label: 'Retailers', desc: 'Real-time inventory control with receipt management' },
+                    { label: 'E-commerce', desc: 'Sync with Shopify and manage orders seamlessly' },
+                    { label: 'Accounting', desc: 'Integrate with QuickBooks and Xero automatically' },
                   ].map((item, idx) => (
                     <Grid item xs={6} sm={6} md={12} key={idx}>
                       <Box
