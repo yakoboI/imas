@@ -6,7 +6,7 @@ const passkeyService = {
    * Check if user has passkeys registered
    */
   checkPasskeys: async (email) => {
-    const response = await api.get('/auth/passkeys/check', {
+    const response = await api.get('/auth/passkey/passkeys/check', {
       params: { email }
     });
     return response.data.hasPasskeys;
@@ -84,7 +84,7 @@ const passkeyService = {
    * Get user's passkeys
    */
   getUserPasskeys: async () => {
-    const response = await api.get('/auth/passkeys');
+    const response = await api.get('/auth/passkey/passkeys');
     return response.data.passkeys;
   },
 
@@ -92,7 +92,7 @@ const passkeyService = {
    * Delete a passkey
    */
   deletePasskey: async (passkeyId) => {
-    const response = await api.delete(`/auth/passkeys/${passkeyId}`);
+    const response = await api.delete(`/auth/passkey/passkeys/${passkeyId}`);
     return response.data;
   },
 
