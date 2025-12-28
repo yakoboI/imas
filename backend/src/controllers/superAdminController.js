@@ -1283,6 +1283,17 @@ class SuperAdminController {
     }
   }
 
+  // Get social media links (public endpoint)
+  static async getSocialMediaLinks(req, res, next) {
+    try {
+      const links = await SystemSettingsService.getSocialMediaLinks();
+      res.json({ socialMedia: links });
+    } catch (error) {
+      console.error('Error getting social media links:', error);
+      next(error);
+    }
+  }
+
   // Upload avatar
   static async uploadAvatar(req, res, next) {
     try {

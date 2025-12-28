@@ -120,6 +120,18 @@ app.get('/health', async (req, res) => {
   });
 });
 
+// Public API Routes (no authentication required)
+app.get('/api/public/social-media', async (req, res) => {
+  try {
+    const SystemSettingsService = require('./services/systemSettingsService');
+    const links = await SystemSettingsService.getSocialMediaLinks();
+    res.json({ socialMedia: links });
+  } catch (error) {
+    console.error('Error getting social media links:', error);
+    res.status(500).json({ error: 'Failed to get social media links' });
+  }
+});
+
 // API Routes
 // IMPORTANT: Specific routes must come before generic routes (like /:id)
 app.use('/api/auth', authRoutes);

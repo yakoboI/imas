@@ -5,5 +5,13 @@
   "maxTenants": 1000,
   "sessionTimeout": 3600,
   "backupFrequency": "daily",
-  "emailNotifications": true
+  "emailNotifications": true,
+  "socialMedia": {
+    "whatsapp1": "444444444444444444444444444",
+    "whatsapp2": "",
+    "instagram": "",
+    "twitter": "",
+    "facebook": "",
+    "email": ""
+  }
 }

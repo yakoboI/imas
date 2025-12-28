@@ -22,6 +22,14 @@ const defaultSettings = {
   sessionTimeout: 3600, // seconds
   backupFrequency: 'daily', // daily, weekly, monthly
   emailNotifications: true,
+  socialMedia: {
+    whatsapp1: '',
+    whatsapp2: '',
+    instagram: '',
+    twitter: '',
+    facebook: '',
+    email: '',
+  },
 };
 
 class SystemSettingsService {
@@ -48,6 +56,17 @@ class SystemSettingsService {
       console.error('Error reading system settings:', error);
       // Return defaults on error
       return defaultSettings;
+    }
+  }
+
+  // Get social media links (public, no auth required)
+  static async getSocialMediaLinks() {
+    try {
+      const settings = await this.getSettings();
+      return settings.socialMedia || defaultSettings.socialMedia;
+    } catch (error) {
+      console.error('Error getting social media links:', error);
+      return defaultSettings.socialMedia;
     }
   }
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -30,6 +30,11 @@ import {
   Assessment,
   IntegrationInstructions,
   AccountBalance,
+  WhatsApp,
+  Instagram,
+  Twitter,
+  Facebook,
+  Email,
 } from '@mui/icons-material';
 import SEO from '../components/SEO';
 
@@ -127,8 +132,14 @@ function Landing() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  // Don't check isAuthenticated - always show landing page
-  // const { isAuthenticated } = useSelector((state) => state.auth);
+  const [socialMedia, setSocialMedia] = useState({
+    whatsapp1: '',
+    whatsapp2: '',
+    instagram: '',
+    twitter: '',
+    facebook: '',
+    email: '',
+  });
 
   // Landing page should ALWAYS show - no redirects, no checks, no API calls
   useEffect(() => {
@@ -146,6 +157,25 @@ function Landing() {
     } else {
       console.log('[Landing] ✅ On correct root path');
     }
+
+    // Fetch social media links
+    const fetchSocialMedia = async () => {
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${API_BASE_URL}/public/social-media`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.socialMedia) {
+            setSocialMedia(data.socialMedia);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch social media links:', error);
+        // Silently fail - use empty links
+      }
+    };
+
+    fetchSocialMedia();
   }, []);
 
   console.log('[Landing] ✅ Component rendering - Landing page content should appear');
@@ -648,6 +678,184 @@ function Landing() {
           >
             No credit card required • Free plan available • Upgrade anytime
           </Typography>
+          
+          {/* Social Media Icons */}
+          <Box
+            sx={{
+              mt: 4,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 2,
+              flexWrap: 'wrap',
+            }}
+          >
+            {/* WhatsApp 1 */}
+            {socialMedia.whatsapp1 && (
+            <Box
+              component="a"
+              href={socialMedia.whatsapp1.startsWith('http') ? socialMedia.whatsapp1 : `https://wa.me/${socialMedia.whatsapp1.replace(/[^0-9]/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: '#25D366',
+                  transform: 'translateY(-3px) scale(1.1)',
+                  boxShadow: '0 4px 12px rgba(37,211,102,0.4)',
+                },
+              }}
+            >
+              <WhatsApp sx={{ fontSize: 24 }} />
+            </Box>
+            )}
+            
+            {/* WhatsApp 2 */}
+            {socialMedia.whatsapp2 && (
+            <Box
+              component="a"
+              href={socialMedia.whatsapp2.startsWith('http') ? socialMedia.whatsapp2 : `https://wa.me/${socialMedia.whatsapp2.replace(/[^0-9]/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: '#25D366',
+                  transform: 'translateY(-3px) scale(1.1)',
+                  boxShadow: '0 4px 12px rgba(37,211,102,0.4)',
+                },
+              }}
+            >
+              <WhatsApp sx={{ fontSize: 24 }} />
+            </Box>
+            )}
+            
+            {/* Instagram */}
+            {socialMedia.instagram && (
+            <Box
+              component="a"
+              href={socialMedia.instagram.startsWith('http') ? socialMedia.instagram : `https://instagram.com/${socialMedia.instagram.replace('@', '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: '#E4405F',
+                  transform: 'translateY(-3px) scale(1.1)',
+                  boxShadow: '0 4px 12px rgba(228,64,95,0.4)',
+                },
+              }}
+            >
+              <Instagram sx={{ fontSize: 24 }} />
+            </Box>
+            )}
+            
+            {/* Twitter */}
+            {socialMedia.twitter && (
+            <Box
+              component="a"
+              href={socialMedia.twitter.startsWith('http') ? socialMedia.twitter : `https://twitter.com/${socialMedia.twitter.replace('@', '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: '#1DA1F2',
+                  transform: 'translateY(-3px) scale(1.1)',
+                  boxShadow: '0 4px 12px rgba(29,161,242,0.4)',
+                },
+              }}
+            >
+              <Twitter sx={{ fontSize: 24 }} />
+            </Box>
+            )}
+            
+            {/* Facebook */}
+            {socialMedia.facebook && (
+            <Box
+              component="a"
+              href={socialMedia.facebook.startsWith('http') ? socialMedia.facebook : `https://facebook.com/${socialMedia.facebook}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: '#1877F2',
+                  transform: 'translateY(-3px) scale(1.1)',
+                  boxShadow: '0 4px 12px rgba(24,119,242,0.4)',
+                },
+              }}
+            >
+              <Facebook sx={{ fontSize: 24 }} />
+            </Box>
+            )}
+            
+            {/* Gmail */}
+            {socialMedia.email && (
+            <Box
+              component="a"
+              href={`mailto:${socialMedia.email}`}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  bgcolor: '#EA4335',
+                  transform: 'translateY(-3px) scale(1.1)',
+                  boxShadow: '0 4px 12px rgba(234,67,53,0.4)',
+                },
+              }}
+            >
+              <Email sx={{ fontSize: 24 }} />
+            </Box>
+            )}
+          </Box>
         </Container>
       </Box>
     </Box>

@@ -221,6 +221,138 @@ function SystemSettings() {
               {saving ? 'Saving...' : 'Save Settings'}
             </Button>
           </Paper>
+
+          {/* Social Media Links Section */}
+          <Paper sx={{ p: { xs: 2, sm: 3 }, mt: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+              Social Media Links
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Manage social media links displayed on the landing page
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ mt: 2 }}>
+              <TextField
+                fullWidth
+                label="WhatsApp Number 1"
+                value={settings.socialMedia?.whatsapp1 || ''}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    socialMedia: {
+                      ...(settings.socialMedia || {}),
+                      whatsapp1: e.target.value,
+                    },
+                  })
+                }
+                placeholder="e.g., 255123456789 or https://wa.me/255123456789"
+                helperText="Enter phone number (with country code) or full WhatsApp URL"
+                sx={{ mb: 3 }}
+              />
+              
+              <TextField
+                fullWidth
+                label="WhatsApp Number 2"
+                value={settings.socialMedia?.whatsapp2 || ''}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    socialMedia: {
+                      ...(settings.socialMedia || {}),
+                      whatsapp2: e.target.value,
+                    },
+                  })
+                }
+                placeholder="e.g., 255987654321 or https://wa.me/255987654321"
+                helperText="Enter phone number (with country code) or full WhatsApp URL"
+                sx={{ mb: 3 }}
+              />
+              
+              <TextField
+                fullWidth
+                label="Instagram"
+                value={settings.socialMedia?.instagram || ''}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    socialMedia: {
+                      ...(settings.socialMedia || {}),
+                      instagram: e.target.value,
+                    },
+                  })
+                }
+                placeholder="e.g., @inventora.store or https://instagram.com/inventora.store"
+                helperText="Enter Instagram handle or full URL"
+                sx={{ mb: 3 }}
+              />
+              
+              <TextField
+                fullWidth
+                label="Twitter"
+                value={settings.socialMedia?.twitter || ''}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    socialMedia: {
+                      ...(settings.socialMedia || {}),
+                      twitter: e.target.value,
+                    },
+                  })
+                }
+                placeholder="e.g., @inventora_store or https://twitter.com/inventora_store"
+                helperText="Enter Twitter handle or full URL"
+                sx={{ mb: 3 }}
+              />
+              
+              <TextField
+                fullWidth
+                label="Facebook"
+                value={settings.socialMedia?.facebook || ''}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    socialMedia: {
+                      ...(settings.socialMedia || {}),
+                      facebook: e.target.value,
+                    },
+                  })
+                }
+                placeholder="e.g., inventora.store or https://facebook.com/inventora.store"
+                helperText="Enter Facebook page name or full URL"
+                sx={{ mb: 3 }}
+              />
+              
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                value={settings.socialMedia?.email || ''}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    socialMedia: {
+                      ...(settings.socialMedia || {}),
+                      email: e.target.value,
+                    },
+                  })
+                }
+                placeholder="e.g., support@inventora.store"
+                helperText="Contact email address"
+                sx={{ mb: 3 }}
+              />
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<Save />}
+              onClick={handleSave}
+              disabled={saving}
+              size={isSmallScreen ? 'small' : 'medium'}
+              fullWidth={isSmallScreen}
+              sx={{ mt: 2 }}
+            >
+              {saving ? 'Saving...' : 'Save Social Media Links'}
+            </Button>
+          </Paper>
         </Grid>
 
         <Grid item xs={12} md={4}>
