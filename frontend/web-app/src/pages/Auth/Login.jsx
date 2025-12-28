@@ -102,7 +102,14 @@ function Login() {
       }
 
       try {
-        const hasKeys = await passkeyService.checkPasskeys(formData.email.trim().toLowerCase());
+        const emailValue = typeof formData.email === 'string' ? formData.email.trim().toLowerCase() : '';
+        if (!emailValue) {
+          if (!cancelled) {
+            setHasPasskeys(null);
+          }
+          return;
+        }
+        const hasKeys = await passkeyService.checkPasskeys(emailValue);
         if (!cancelled) {
           setHasPasskeys(hasKeys);
         }
@@ -376,7 +383,12 @@ function Login() {
                         const checkPasskeys = async () => {
                           try {
                             setCheckingPasskeys(true);
-                            const hasKeys = await passkeyService.checkPasskeys(e.target.value.trim().toLowerCase());
+                            const emailValue = typeof e.target.value === 'string' ? e.target.value.trim().toLowerCase() : '';
+                            if (!emailValue) {
+                              setHasPasskeys(null);
+                              return;
+                            }
+                            const hasKeys = await passkeyService.checkPasskeys(emailValue);
                             setHasPasskeys(hasKeys);
                           } catch (error) {
                             setHasPasskeys(null);

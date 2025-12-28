@@ -6,7 +6,7 @@ const passkeyService = {
    * Check if user has passkeys registered
    */
   checkPasskeys: async (email) => {
-    if (!email) {
+    if (!email || typeof email !== 'string') {
       return false;
     }
     // Normalize email: trim and lowercase

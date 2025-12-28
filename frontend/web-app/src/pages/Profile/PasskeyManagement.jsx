@@ -191,9 +191,11 @@ function PasskeyManagement() {
               <React.Fragment key={passkey.id}>
                 <ListItem>
                   <ListItemText
+                    primaryTypographyProps={{ component: 'div' }}
+                    secondaryTypographyProps={{ component: 'div' }}
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1">{passkey.deviceName || 'Unknown Device'}</Typography>
+                        <Typography variant="subtitle1" component="span">{passkey.deviceName || 'Unknown Device'}</Typography>
                         {passkey.lastUsedAt && (
                           <Chip
                             label="Active"
@@ -207,11 +209,11 @@ function PasskeyManagement() {
                     }
                     secondary={
                       <Box>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" component="span" sx={{ display: 'block' }}>
                           Created: {format(new Date(passkey.createdAt), 'MMM dd, yyyy')}
                         </Typography>
                         {passkey.lastUsedAt && (
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" component="span" sx={{ display: 'block' }}>
                             Last used: {format(new Date(passkey.lastUsedAt), 'MMM dd, yyyy HH:mm')}
                           </Typography>
                         )}

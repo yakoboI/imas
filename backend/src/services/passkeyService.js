@@ -15,7 +15,7 @@ const rpName = process.env.RP_NAME || 'IMAS Inventory System';
 
 // Helper function to extract domain from URL (remove protocol and trailing slash)
 const extractDomain = (url) => {
-  if (!url) return null;
+  if (!url || typeof url !== 'string') return null;
   return url.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0];
 };
 
