@@ -65,18 +65,13 @@
         const currentPath = window.location.pathname;
         const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
         
-        console.log('[Pre-React] Current path:', currentPath);
-        
         // If we're on a public path, clear invalid tokens
         if (publicPaths.includes(currentPath)) {
-          console.log('[Pre-React] On public path - clearing invalid tokens if any');
-          
           // Clear any invalid tokens but don't redirect
           const token = localStorage.getItem('token');
           const user = localStorage.getItem('user');
           
           if (token && !user) {
-            console.log('[Pre-React] Clearing invalid token (no user data)');
             localStorage.removeItem('token');
           }
         }

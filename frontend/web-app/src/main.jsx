@@ -178,12 +178,9 @@ if (publicPaths.includes(currentPath)) {
   // If we have a token but no user, or if token seems invalid, clear it
   // But don't redirect - let the page load normally
   if (token && !user) {
-    console.log('[Main] Clearing invalid token (no user data)');
     localStorage.removeItem('token');
   }
 }
-
-console.log('[Main] Initializing app, current path:', currentPath);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

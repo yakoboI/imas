@@ -45,17 +45,6 @@ function App() {
     }
   }, []);
 
-  // Debug: Log current route and prevent any redirects
-  React.useEffect(() => {
-    const currentPath = window.location.pathname;
-    console.log('[App] Current pathname:', currentPath);
-    console.log('[App] Routes configured - Landing page should be at /');
-    
-    // If we're on root path, ensure we stay there
-    if (currentPath === '/') {
-      console.log('[App] On root path - Landing page should render');
-    }
-  }, []);
 
   return (
     <>

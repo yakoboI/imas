@@ -53,7 +53,6 @@ api.interceptors.response.use(
       
       if (isPublicPath) {
         // We're on a public page - do NOT redirect, just clear tokens
-        console.log(`[API Interceptor] 401 on public page "${currentPath}" - clearing tokens, NOT redirecting`);
         return Promise.reject(error);
       }
       
@@ -61,11 +60,7 @@ api.interceptors.response.use(
       const isProtectedRoute = currentPath.startsWith('/app') || currentPath === '/dashboard';
       
       if (isProtectedRoute) {
-        console.log(`[API Interceptor] 401 on protected route "${currentPath}" - redirecting to login`);
         window.location.href = '/login';
-      } else {
-        // Unknown/other path - don't redirect, just clear tokens
-        console.log(`[API Interceptor] 401 on unknown path "${currentPath}" - clearing tokens, NOT redirecting`);
       }
       
       return Promise.reject(error);
