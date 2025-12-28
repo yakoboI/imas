@@ -1,8 +1,15 @@
 # robots.txt for IMAS SuperAdmin Portal
+# Allow all search engines including Bing
 User-agent: *
-# Disallow all crawlers - this is an admin portal
-Disallow: /
+Allow: /
+Allow: /login
 
-# Sitemap location (for reference, though not publicly accessible)
+# Bing-specific crawler
+User-agent: Bingbot
+Allow: /
+Allow: /login
+Crawl-delay: 0
+
+# Sitemap location
 Sitemap: https://admin.inventora.store/sitemap.xml
 
