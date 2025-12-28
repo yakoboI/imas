@@ -64,14 +64,6 @@ coverage/
 *.pem
 *.key
 
-# Migrations
-**/migrations/**
-backend/src/database/migrations/
-**/migrations/*.sql
-**/migrations/*.js
-*.migration.js
-*.migration.sql
-
 # Documentation
 *.md
 **/*.md
