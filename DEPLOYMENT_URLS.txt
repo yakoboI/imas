@@ -65,6 +65,21 @@ Variable 2:
   • Value: https://admin.inventora.store
   (Production URL - MUST be set in Railway backend)
 
+Variable 3 (Passkeys - REQUIRED for production):
+  • Name: RP_ID
+  • Value: app.inventora.store
+  (Relying Party ID - domain only, no protocol)
+
+Variable 4 (Passkeys - REQUIRED for production):
+  • Name: ORIGIN
+  • Value: https://app.inventora.store
+  (Full origin URL with HTTPS - MUST match frontend URL)
+
+Variable 5 (Passkeys - Optional):
+  • Name: RP_NAME
+  • Value: IMAS Inventory System
+  (Display name for passkey registration - defaults if not set)
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ TESTING URLs
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

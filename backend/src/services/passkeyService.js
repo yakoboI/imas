@@ -19,17 +19,46 @@ const extractDomain = (url) => {
   return url.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0];
 };
 
+// Helper function to ensure HTTPS in production
+const ensureHttps = (url) => {
+  if (!url || typeof url !== 'string') return url;
+  if (process.env.NODE_ENV === 'production' && url.startsWith('http://') && !url.includes('localhost')) {
+    return url.replace('http://', 'https://');
+  }
+  return url;
+};
+
 // RP ID must be just the domain name (no protocol, no path)
-const rpID = process.env.RP_ID 
-  ? extractDomain(process.env.RP_ID) 
-  : (process.env.NODE_ENV === 'production' 
-    ? extractDomain(process.env.DOMAIN) || extractDomain(process.env.FRONTEND_URL) || 'localhost'
-    : 'localhost');
+// Priority: RP_ID > DOMAIN > FRONTEND_URL > localhost
+let rpID = 'localhost';
+if (process.env.RP_ID) {
+  rpID = extractDomain(process.env.RP_ID);
+} else if (process.env.NODE_ENV === 'production') {
+  rpID = extractDomain(process.env.DOMAIN) || extractDomain(process.env.FRONTEND_URL) || 'localhost';
+}
 
 // Origin must be the full URL with protocol
-const origin = process.env.ORIGIN || (process.env.NODE_ENV === 'production'
-  ? process.env.FRONTEND_URL || 'http://localhost:3000'
-  : 'http://localhost:3000');
+// Priority: ORIGIN > FRONTEND_URL (with HTTPS in production) > localhost
+let origin = 'http://localhost:3000';
+if (process.env.ORIGIN) {
+  origin = ensureHttps(process.env.ORIGIN);
+} else if (process.env.NODE_ENV === 'production') {
+  origin = ensureHttps(process.env.FRONTEND_URL) || 'https://app.inventora.store';
+}
+
+// Log configuration in production for debugging (only once at startup)
+if (process.env.NODE_ENV === 'production' && !global.passkeyConfigLogged) {
+  console.log('[PasskeyService] Production Configuration:');
+  console.log(`  RP_NAME: ${rpName}`);
+  console.log(`  RP_ID: ${rpID}`);
+  console.log(`  ORIGIN: ${origin}`);
+  console.log(`  NODE_ENV: ${process.env.NODE_ENV}`);
+  if (rpID === 'localhost' || origin.includes('localhost')) {
+    console.warn('[PasskeyService] WARNING: Using localhost values in production!');
+    console.warn('[PasskeyService] Set RP_ID and ORIGIN environment variables for production.');
+  }
+  global.passkeyConfigLogged = true;
+}
 
 class PasskeyService {
   /**
@@ -132,6 +161,16 @@ class PasskeyService {
         requireUserVerification: true
       });
     } catch (error) {
+      // Log detailed error in production for debugging
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[PasskeyService] Registration verification failed:', {
+          error: error.message,
+          expectedOrigin: origin,
+          expectedRPID: rpID,
+          actualOrigin: registrationResponse?.response?.clientDataJSON ? 
+            JSON.parse(Buffer.from(registrationResponse.response.clientDataJSON, 'base64url').toString()).origin : 'unknown'
+        });
+      }
       throw new Error(`Verification failed: ${error.message}`);
     }
 
@@ -286,6 +325,18 @@ class PasskeyService {
         requireUserVerification: true
       });
     } catch (error) {
+      // Log detailed error in production for debugging
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[PasskeyService] Authentication verification failed:', {
+          error: error.message,
+          expectedOrigin: origin,
+          expectedRPID: rpID,
+          userId: user.id,
+          email: user.email,
+          actualOrigin: authenticationResponse?.response?.clientDataJSON ? 
+            JSON.parse(Buffer.from(authenticationResponse.response.clientDataJSON, 'base64url').toString()).origin : 'unknown'
+        });
+      }
       throw new Error(`Verification failed: ${error.message}`);
     }
 

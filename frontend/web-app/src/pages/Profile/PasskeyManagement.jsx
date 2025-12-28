@@ -154,7 +154,10 @@ function PasskeyManagement() {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setOpenDialog(true)}
+          onClick={(e) => {
+            e.currentTarget.blur();
+            setOpenDialog(true);
+          }}
           size={isSmallScreen ? 'small' : 'medium'}
           sx={{ width: { xs: '100%', sm: 'auto' } }}
         >
@@ -243,7 +246,12 @@ function PasskeyManagement() {
       </Paper>
 
       {/* Register Passkey Dialog */}
-      <Dialog open={openDialog} onClose={() => !registering && setOpenDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={openDialog} 
+        onClose={() => !registering && setOpenDialog(false)} 
+        maxWidth="sm" 
+        fullWidth
+      >
         <DialogTitle>Register New Passkey</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

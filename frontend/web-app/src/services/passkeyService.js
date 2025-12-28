@@ -29,6 +29,11 @@ const passkeyService = {
    * Complete passkey registration - send credential to server
    */
   completeRegistration: async (options, deviceName = null) => {
+    // Check if we're on HTTPS (required for passkeys in production)
+    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      throw new Error('Passkeys require HTTPS. Please access the site using HTTPS.');
+    }
+
     // Use browser API to create credential
     let credential;
     try {
@@ -40,16 +45,30 @@ const passkeyService = {
         throw new Error('Registration was cancelled or timed out.');
       } else if (error.name === 'NotSupportedError') {
         throw new Error('Passkeys are not supported on this device or browser.');
+      } else if (error.name === 'SecurityError') {
+        throw new Error('Security error: The origin or RP ID may be misconfigured. Please contact support.');
       }
       throw new Error(`Registration failed: ${error.message}`);
     }
 
     // Send credential to server for verification
-    const response = await api.post('/auth/passkey/register/complete', {
-      credential,
-      deviceName
-    });
-    return response.data;
+    try {
+      const response = await api.post('/auth/passkey/register/complete', {
+        credential,
+        deviceName
+      });
+      return response.data;
+    } catch (error) {
+      // Provide more helpful error messages
+      if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.message || error.message;
+        if (errorMessage.includes('Verification failed') || errorMessage.includes('origin') || errorMessage.includes('RP ID')) {
+          throw new Error('Passkey registration failed due to configuration error. Please contact support.');
+        }
+        throw new Error(errorMessage);
+      }
+      throw error;
+    }
   },
 
   /**
@@ -64,6 +83,11 @@ const passkeyService = {
    * Complete passkey authentication - send credential to server
    */
   completeAuthentication: async (email, options) => {
+    // Check if we're on HTTPS (required for passkeys in production)
+    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      throw new Error('Passkeys require HTTPS. Please access the site using HTTPS.');
+    }
+
     // Use browser API to authenticate
     let credential;
     try {
@@ -73,16 +97,30 @@ const passkeyService = {
         throw new Error('Authentication was cancelled or timed out.');
       } else if (error.name === 'NotSupportedError') {
         throw new Error('Passkeys are not supported on this device or browser.');
+      } else if (error.name === 'SecurityError') {
+        throw new Error('Security error: The origin or RP ID may be misconfigured. Please contact support.');
       }
       throw new Error(`Authentication failed: ${error.message}`);
     }
 
     // Send credential to server for verification
-    const response = await api.post('/auth/passkey/login/complete', {
-      email,
-      credential
-    });
-    return response.data;
+    try {
+      const response = await api.post('/auth/passkey/login/complete', {
+        email,
+        credential
+      });
+      return response.data;
+    } catch (error) {
+      // Provide more helpful error messages
+      if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.message || error.message;
+        if (errorMessage.includes('Verification failed') || errorMessage.includes('origin') || errorMessage.includes('RP ID')) {
+          throw new Error('Passkey authentication failed due to configuration error. Please contact support.');
+        }
+        throw new Error(errorMessage);
+      }
+      throw error;
+    }
   },
 
   /**
