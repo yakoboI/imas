@@ -514,12 +514,14 @@ function Landing() {
                 </Typography>
                 <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }} sx={{ position: 'relative', zIndex: 1 }}>
                   {[
-                    { label: 'Startups', desc: 'Launch faster with instant setup and payment integrations' },
-                    { label: 'SMBs', desc: 'Scale without complexity with comprehensive reporting' },
-                    { label: 'Enterprises', desc: 'Multi-warehouse at scale with tax compliance' },
-                    { label: 'Retailers', desc: 'Real-time inventory control with receipt management' },
-                    { label: 'E-commerce', desc: 'Sync with Shopify and manage orders seamlessly' },
-                    { label: 'Accounting', desc: 'Integrate with QuickBooks and Xero automatically' },
+                    { label: 'Retail Stores', desc: 'Real-time inventory control with receipt management and payment processing' },
+                    { label: 'E-commerce', desc: 'Sync with Shopify, manage orders, and track inventory across channels' },
+                    { label: 'Wholesale & Distribution', desc: 'Multi-warehouse management with supplier tracking and order automation' },
+                    { label: 'Manufacturing', desc: 'Track raw materials, manage production inventory, and monitor stock levels' },
+                    { label: 'Accounting Firms', desc: 'Integrate with QuickBooks and Xero for seamless financial management' },
+                    { label: 'Tanzania Businesses', desc: 'Automatic TRA EFDMS compliance with invoice submission and Z-Reports' },
+                    { label: 'Startups', desc: 'Launch faster with instant setup, payment integrations, and scalable architecture' },
+                    { label: 'Enterprises', desc: 'Multi-tenant, multi-warehouse at scale with advanced security and audit trails' },
                   ].map((item, idx) => (
                     <Grid item xs={6} sm={6} md={12} key={idx}>
                       <Box
