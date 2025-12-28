@@ -154,9 +154,6 @@ function Warehouses() {
               {tenantInfo.warehouseCount} of {tenantInfo.maxWarehouses === 999999 ? 'Unlimited' : tenantInfo.maxWarehouses} warehouse{tenantInfo.maxWarehouses === 1 ? '' : 's'} ({tenantInfo.maxWarehouses === 999999 ? '∞' : Math.max(0, tenantInfo.maxWarehouses - tenantInfo.warehouseCount)} remaining)
             </Typography>
           )}
-          <Typography variant="body2" color="text.secondary">
-            Manage warehouse locations and storage facilities
-          </Typography>
         </Box>
         <Button 
           variant="contained" 

@@ -23,7 +23,6 @@ import { Save, Settings as SettingsIcon, CheckCircle, Error as ErrorIcon, Delete
 import { toast } from 'react-toastify';
 import tenantSettingsService from '../services/tenantSettingsService';
 import traIntegrationService from '../services/traIntegrationService';
-import notificationService from '../services/notificationService';
 import { useSelector } from 'react-redux';
 import { CURRENCIES } from '../utils/currency';
 
@@ -69,7 +68,6 @@ function Settings() {
   const [traLoading, setTraLoading] = useState(false);
   const [traSaving, setTraSaving] = useState(false);
   const [traVerifying, setTraVerifying] = useState(false);
-  const [testingNotification, setTestingNotification] = useState({ type: null, loading: false });
   const [traFormData, setTraFormData] = useState({
     tin: '',
     vfdSerialNum: '',
@@ -257,7 +255,7 @@ function Settings() {
 
   return (
     <Box>
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3, textAlign: 'center' }}>
         <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
           Settings
         </Typography>
@@ -572,102 +570,8 @@ function Settings() {
                 </Button>
               )}
             </Box>
-
-            <Alert severity="info" sx={{ mt: 2 }}>
-              <Typography variant="body2">
-                <strong>About TRA EFDMS Integration:</strong><br />
-                Configure your Tanzania Revenue Authority credentials to automatically submit invoices and daily Z-Reports to TRA.
-                All invoices generated will be automatically submitted to TRA EFDMS, and daily Z-Reports will be sent automatically at the end of each business day.
-              </Typography>
-            </Alert>
           </Paper>
         </Grid>
-
-        {/* Notification Testing Section (Admin Only) */}
-        {isAdmin && (
-          <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SettingsIcon /> Notification Testing (Admin/Dev Tools)
-              </Typography>
-              <Divider sx={{ my: 2 }} />
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                <Typography variant="body2">
-                  <strong>Development Tools:</strong> Use these buttons to test notification functionality. 
-                  This will send test notifications to verify that your notification system is working correctly.
-                </Typography>
-              </Alert>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={async () => {
-                      setTestingNotification({ type: 'low-stock', loading: true });
-                      try {
-                        await notificationService.testLowStockAlert();
-                        toast.success('Low stock alert test notification sent successfully');
-                      } catch (error) {
-                        console.error('Failed to test low stock alert:', error);
-                        toast.error(error.response?.data?.error || 'Failed to send test notification');
-                      } finally {
-                        setTestingNotification({ type: null, loading: false });
-                      }
-                    }}
-                    disabled={testingNotification.loading}
-                    size={isSmallScreen ? 'small' : 'medium'}
-                  >
-                    {testingNotification.type === 'low-stock' && testingNotification.loading ? 'Testing...' : 'Test Low Stock Alert'}
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={async () => {
-                      setTestingNotification({ type: 'order-update', loading: true });
-                      try {
-                        await notificationService.testOrderUpdate();
-                        toast.success('Order update test notification sent successfully');
-                      } catch (error) {
-                        console.error('Failed to test order update:', error);
-                        toast.error(error.response?.data?.error || 'Failed to send test notification');
-                      } finally {
-                        setTestingNotification({ type: null, loading: false });
-                      }
-                    }}
-                    disabled={testingNotification.loading}
-                    size={isSmallScreen ? 'small' : 'medium'}
-                  >
-                    {testingNotification.type === 'order-update' && testingNotification.loading ? 'Testing...' : 'Test Order Update'}
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    onClick={async () => {
-                      setTestingNotification({ type: 'daily-digest', loading: true });
-                      try {
-                        await notificationService.testDailyDigest();
-                        toast.success('Daily digest test notification sent successfully');
-                      } catch (error) {
-                        console.error('Failed to test daily digest:', error);
-                        toast.error(error.response?.data?.error || 'Failed to send test notification');
-                      } finally {
-                        setTestingNotification({ type: null, loading: false });
-                      }
-                    }}
-                    disabled={testingNotification.loading}
-                    size={isSmallScreen ? 'small' : 'medium'}
-                  >
-                    {testingNotification.type === 'daily-digest' && testingNotification.loading ? 'Testing...' : 'Test Daily Digest'}
-                  </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Grid>
-        )}
 
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3, textAlign: 'center' }}>

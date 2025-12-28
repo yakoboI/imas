@@ -1136,9 +1136,6 @@ function Reports() {
             Tenant: {tenantName}
           </Typography>
         )}
-        <Typography variant="body2" color="text.secondary">
-          Well structured analytics based on your sales, orders, customers, products and stock.
-        </Typography>
       </Box>
 
       <Grid container spacing={3}>

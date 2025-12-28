@@ -235,9 +235,6 @@ function Inventory() {
           <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             Inventory
           </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Track and manage product stock levels across warehouses
-          </Typography>
         </Box>
         <Button 
           variant="contained" 
@@ -251,19 +248,19 @@ function Inventory() {
       </Box>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={4}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6">{stats.totalItems ?? 0}</Typography>
             <Typography variant="body2" color="text.secondary">Total Items</Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={4}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6" color="warning.main">{stats.lowStockItems ?? 0}</Typography>
             <Typography variant="body2" color="text.secondary">Low Stock</Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={4}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6" color="error.main">{stats.outOfStockItems ?? 0}</Typography>
             <Typography variant="body2" color="text.secondary">Out of Stock</Typography>

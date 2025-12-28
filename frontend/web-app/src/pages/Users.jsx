@@ -225,20 +225,17 @@ function Users() {
       <Box sx={{ 
         display: 'flex', 
         flexDirection: { xs: 'column', sm: 'row' },
-        justifyContent: 'space-between', 
-        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        justifyContent: { xs: 'center', sm: 'space-between' }, 
+        alignItems: 'center', 
         mb: 3,
         gap: { xs: 2, sm: 0 }
       }}>
-        <Box>
+        <Box sx={{ textAlign: 'center', flex: { xs: 'none', sm: 1 } }}>
           <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             Users
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
             {userLimit.current} of {userLimit.max} users ({userLimit.remaining} remaining)
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage user accounts and permissions
           </Typography>
         </Box>
         <Button 

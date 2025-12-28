@@ -396,12 +396,12 @@ function Integrations() {
       <Box sx={{ 
         display: 'flex', 
         flexDirection: { xs: 'column', sm: 'row' },
-        justifyContent: 'space-between', 
-        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        justifyContent: { xs: 'center', sm: 'space-between' }, 
+        alignItems: 'center', 
         mb: 3,
         gap: { xs: 2, sm: 0 }
       }}>
-        <Box>
+        <Box sx={{ textAlign: 'center', flex: { xs: 'none', sm: 1 } }}>
           <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             Integrations
           </Typography>
@@ -435,7 +435,7 @@ function Integrations() {
                 const isVerified = integration.connectionStatus?.verified || false;
 
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={integration.type}>
+                  <Grid item xs={6} sm={6} md={4} key={integration.type}>
                     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                       <CardContent sx={{ flexGrow: 1 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>

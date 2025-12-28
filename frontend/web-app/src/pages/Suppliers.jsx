@@ -154,9 +154,6 @@ function Suppliers() {
           <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             Suppliers
           </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Manage supplier contacts and vendor information
-          </Typography>
         </Box>
         <Button 
           variant="contained" 
