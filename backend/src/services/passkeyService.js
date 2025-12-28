@@ -373,10 +373,23 @@ class PasskeyService {
    * Check if user has passkeys registered
    */
   static async hasPasskeys(userId) {
-    const count = await Passkey.count({
-      where: { user_id: userId }
-    });
-    return count > 0;
+    try {
+      if (!userId) {
+        return false;
+      }
+      
+      // Use findAll and check length instead of count for more reliability
+      const passkeys = await Passkey.findAll({
+        where: { user_id: userId },
+        limit: 1 // Only need to know if at least one exists
+      });
+      
+      return passkeys.length > 0;
+    } catch (error) {
+      // If there's an error, return false instead of throwing
+      // This prevents the check from breaking the login flow
+      return false;
+    }
   }
 }
 

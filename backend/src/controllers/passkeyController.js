@@ -179,10 +179,11 @@ class PasskeyController {
       const User = require('../models/User');
       const { Op } = require('sequelize');
       // Case-insensitive email lookup
+      const normalizedEmail = email.trim().toLowerCase();
       const user = await User.findOne({ 
         where: { 
           email: {
-            [Op.iLike]: email // PostgreSQL case-insensitive
+            [Op.iLike]: normalizedEmail // PostgreSQL case-insensitive
           }
         } 
       });

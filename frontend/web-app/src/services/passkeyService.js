@@ -6,10 +6,15 @@ const passkeyService = {
    * Check if user has passkeys registered
    */
   checkPasskeys: async (email) => {
+    if (!email) {
+      return false;
+    }
+    // Normalize email: trim and lowercase
+    const normalizedEmail = email.trim().toLowerCase();
     const response = await api.get('/auth/passkey/passkeys/check', {
-      params: { email }
+      params: { email: normalizedEmail }
     });
-    return response.data.hasPasskeys;
+    return response.data.hasPasskeys === true;
   },
 
   /**
