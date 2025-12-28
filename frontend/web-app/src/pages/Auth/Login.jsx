@@ -70,9 +70,6 @@ function Login() {
   useEffect(() => {
     const supported = passkeyService.isSupported();
     setPasskeySupported(supported);
-    if (!supported) {
-      console.log('Passkeys not supported in this browser');
-    }
   }, []);
 
   // Check if user has passkeys when email changes
@@ -87,9 +84,7 @@ function Login() {
       try {
         const hasKeys = await passkeyService.checkPasskeys(formData.email);
         setHasPasskeys(hasKeys);
-        console.log('Passkey check result:', hasKeys, 'for email:', formData.email);
       } catch (error) {
-        console.error('Error checking passkeys:', error);
         setHasPasskeys(false);
       } finally {
         setCheckingPasskeys(false);

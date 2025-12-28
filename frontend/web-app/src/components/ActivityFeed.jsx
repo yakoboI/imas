@@ -54,11 +54,9 @@ function ActivityFeed({ limit = 10, userId = null }) {
 
   useEffect(() => {
     loadActivities();
-    // Auto-refresh every 30 seconds (only if not user-specific)
-    if (!userId) {
-      const interval = setInterval(loadActivities, 30000);
-      return () => clearInterval(interval);
-    }
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadActivities, 30000);
+    return () => clearInterval(interval);
   }, [limit, userId]);
 
   const loadActivities = async () => {

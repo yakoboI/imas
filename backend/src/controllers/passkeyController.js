@@ -187,7 +187,6 @@ class PasskeyController {
 
       res.json({ hasPasskeys });
     } catch (error) {
-      console.error('Check passkeys error:', error);
       res.status(400).json({ error: error.message });
     }
   }

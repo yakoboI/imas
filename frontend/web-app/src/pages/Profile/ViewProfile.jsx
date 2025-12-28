@@ -43,8 +43,8 @@ function ViewProfile() {
   const fetchAttempted = useRef(false);
 
   useEffect(() => {
-    // Prevent duplicate fetches
-    if (!profile && !loading && !fetchAttempted.current) {
+    // Fetch profile when component mounts or when navigating back
+    const loadProfile = () => {
       fetchAttempted.current = true;
       dispatch(fetchProfile()).catch((err) => {
         fetchAttempted.current = false; // Reset on error so retry is possible
@@ -53,7 +53,25 @@ function ViewProfile() {
           toast.error('Too many requests. Please wait a moment and try again.');
         }
       });
+    };
+
+    // Load profile on mount
+    if (!profile && !loading) {
+      loadProfile();
     }
+
+    // Refresh when page becomes visible (user navigates back)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !loading) {
+        loadProfile();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [dispatch, profile, loading]);
 
   if (loading) {
@@ -388,53 +406,69 @@ function ViewProfile() {
             <ActivityFeed limit={10} userId={displayProfile?.id} />
           </Paper>
 
-          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-            <Grid item xs={6} sm="auto">
-              <Button
-                variant="outlined"
-                startIcon={<Lock sx={{ fontSize: { xs: 18, sm: 20 } }} />}
-                onClick={() => navigate('/app/profile/password')}
-                fullWidth={isSmallScreen}
-                size={isSmallScreen ? 'small' : 'medium'}
-                sx={{ 
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                  py: { xs: 1, sm: 1.5 }
-                }}
-              >
-                Change Password
-              </Button>
+          <Paper sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 3 } }}>
+            <Typography 
+              variant="h6" 
+              gutterBottom 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+                mb: 2
+              }}
+            >
+              <Fingerprint sx={{ fontSize: { xs: 18, sm: 24 } }} /> Security & Settings
+            </Typography>
+            <Divider sx={{ my: { xs: 1.5, sm: 2 } }} />
+            <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<Lock sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+                  onClick={() => navigate('/app/profile/password')}
+                  size={isSmallScreen ? 'small' : 'medium'}
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    py: { xs: 1, sm: 1.5 }
+                  }}
+                >
+                  Change Password
+                </Button>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<Notifications sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+                  onClick={() => navigate('/app/profile/notifications')}
+                  size={isSmallScreen ? 'small' : 'medium'}
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    py: { xs: 1, sm: 1.5 }
+                  }}
+                >
+                  Notification Settings
+                </Button>
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  startIcon={<Fingerprint sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+                  onClick={() => navigate('/app/profile/passkeys')}
+                  size={isSmallScreen ? 'small' : 'medium'}
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    py: { xs: 1, sm: 1.5 }
+                  }}
+                >
+                  Manage Passkeys
+                </Button>
+              </Grid>
             </Grid>
-            <Grid item xs={6} sm="auto">
-              <Button
-                variant="outlined"
-                startIcon={<Notifications sx={{ fontSize: { xs: 18, sm: 20 } }} />}
-                onClick={() => navigate('/app/profile/notifications')}
-                fullWidth={isSmallScreen}
-                size={isSmallScreen ? 'small' : 'medium'}
-                sx={{ 
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                  py: { xs: 1, sm: 1.5 }
-                }}
-              >
-                Notification Settings
-              </Button>
-            </Grid>
-            <Grid item xs={6} sm="auto">
-              <Button
-                variant="outlined"
-                startIcon={<Fingerprint sx={{ fontSize: { xs: 18, sm: 20 } }} />}
-                onClick={() => navigate('/app/profile/passkeys')}
-                fullWidth={isSmallScreen}
-                size={isSmallScreen ? 'small' : 'medium'}
-                sx={{ 
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                  py: { xs: 1, sm: 1.5 }
-                }}
-              >
-                Passkeys
-              </Button>
-            </Grid>
-          </Grid>
+          </Paper>
         </Grid>
       </Grid>
     </Box>
